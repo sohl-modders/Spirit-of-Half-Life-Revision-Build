@@ -97,11 +97,13 @@ int CMP5::GetItemInfo(ItemInfo *p)
 	{
 		p->pszAmmo1 = "5.56";
 		p->iMaxAmmo1 = _M4A1_MAX_CARRY;
-		p->iMaxClip = MP5_MAX_ALTCLIP;
+		if ( CVAR_GET_FLOAT("sv_noreload") ) p->iMaxClip = WEAPON_NOCLIP;
+		else p->iMaxClip = MP5_MAX_ALTCLIP;
 	}
 	else
 	{
-		p->iMaxClip = MP5_DEFAULT_GIVE;
+		if ( CVAR_GET_FLOAT("sv_noreload") ) p->iMaxClip = WEAPON_NOCLIP;
+		else p->iMaxClip = MP5_MAX_CLIP;
 		p->pszAmmo1 = "9mm";
 		p->iMaxAmmo1 = _9MM_MAX_CARRY;
 	}
@@ -123,19 +125,40 @@ BOOL CMP5::Deploy( )
 
 void CMP5::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.6;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.6;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	SendWeaponAnim(MP5_HOLSTER);
 }
 
 void CMP5::PrimaryAttack()
 {
 	// don't fire underwater
-	if ( m_iClip && m_pPlayer->pev->waterlevel != 3)
+	if ( m_pPlayer->pev->waterlevel != 3)
 	{
+		if ( CVAR_GET_FLOAT("sv_noreload") )
+		{
+			if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+			{
+				PlayEmptySound( );
+				m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.5;
+				return;
+			}
+			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		}
+		else
+		{
+			if(m_iClip == 0)
+			{
+				PlayEmptySound( );
+				m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.5;
+				return;
+			}
+			m_iClip--;
+		}
+
 		m_pPlayer->m_iWeaponVolume = NORMAL_GUN_VOLUME;
 		m_pPlayer->m_iWeaponFlash = NORMAL_GUN_FLASH;
-
-		m_iClip--;
 
 		// player "shoot" animation
 		m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
@@ -158,12 +181,10 @@ void CMP5::PrimaryAttack()
 	}
 	else
 	{
-		PlayEmptySound( );
+		PlayEmptySound();
 		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.5;
 	}
 }
-
-
 
 void CMP5::SecondaryAttack( void )
 {
@@ -201,6 +222,8 @@ void CMP5::SecondaryAttack( void )
 
 void CMP5::Reload( void )
 {
+	if ( CVAR_GET_FLOAT("sv_noreload") ) return;
+
 	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 ) return;
 // scrama: altweapons
 	if ( CVAR_GET_FLOAT("sv_altweapons") ) DefaultReload( MP5_MAX_ALTCLIP, MP5_RELOAD, 1.5 );

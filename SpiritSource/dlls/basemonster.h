@@ -274,6 +274,7 @@ public:
 		virtual void BarnacleVictimReleased( void );
 
 		void SetEyePosition ( void );
+		void DynamicStepSound ( void ); // Ku2zoff
 
 		BOOL FShouldEat( void );// see if a monster is 'hungry'
 		void Eat ( float flFullDuration );// make the monster 'full' for a while.

@@ -75,6 +75,7 @@ public:
 	int GetItemInfo(ItemInfo *p);
 
 	void PrimaryAttack( void );
+	void SecondaryAttack( void );
 	BOOL Deploy( void );
 	void Holster( );
 	void WeaponIdle( void );
@@ -436,7 +437,9 @@ BOOL CSqueak::Deploy( )
 
 void CSqueak::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.4;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.4;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	SendWeaponAnim( SQUEAK_DOWN );
 	EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_WEAPON, "common/null.wav", 1.0, ATTN_NORM);	
 
@@ -487,12 +490,16 @@ void CSqueak::PrimaryAttack()
 			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
 			m_fJustThrown = 1;
 
-			m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.3;
+			m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.58;
 			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.0;
 		}
 	}
 }
 
+void CSqueak::SecondaryAttack()
+{
+	PrimaryAttack();
+}
 
 void CSqueak::WeaponIdle( void )
 {

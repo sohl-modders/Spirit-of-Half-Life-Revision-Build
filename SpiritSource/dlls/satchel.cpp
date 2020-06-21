@@ -281,7 +281,8 @@ BOOL CSatchel::Deploy( )
 
 void CSatchel::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.6;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.6;
+	else m_pPlayer->m_flNextAttack = 0.0;
 	
 	if ( m_chargeReady ) SendWeaponAnim( SATCHEL_RADIO_HOLSTER );
 	else		 SendWeaponAnim( SATCHEL_DROP );

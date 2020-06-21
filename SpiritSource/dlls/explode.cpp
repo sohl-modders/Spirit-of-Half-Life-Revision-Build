@@ -190,7 +190,7 @@ void CEnvExplosion::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE
 	// draw fireball
 	if ( !( pev->spawnflags & SF_ENVEXPLOSION_NOFIREBALL ) )
 	{
-		PLAYBACK_EVENT_FULL( FEV_RELIABLE|FEV_GLOBAL, edict(), m_usEfx, 0.0, (float *)&pev->origin, (float *)&g_vecZero, pev->dmg, 0.0, 0, 0, 0, 0 );
+		PLAYBACK_EVENT_FULL( FEV_RELIABLE|FEV_GLOBAL, edict(), m_usEfx, 0.0, (float *)&pev->origin, (float *)&g_vecZero, m_spriteScale, 0.0, 0, 0, 0, 0 );
 	}
 	else
 	{
@@ -210,8 +210,9 @@ void CEnvExplosion::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE
 	if ( !( pev->spawnflags & SF_ENVEXPLOSION_NODAMAGE ) )
 	{
 		RadiusDamage ( pev, pev, m_iMagnitude, CLASS_NONE, DMG_BLAST );
-		if (m_iMagnitude > 50){
-			UTIL_ScreenShake( pev->origin, m_iMagnitude / 16, 2.5, m_iMagnitude/50, m_iMagnitude*8 );
+		if (m_iMagnitude > 50)
+		{
+			UTIL_ScreenShake( pev->origin, m_iMagnitude / 16, 2.5, m_iMagnitude/50, m_iMagnitude*4 );
 		}
 	}
 

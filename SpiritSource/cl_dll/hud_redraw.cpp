@@ -21,6 +21,8 @@
 
 #include "vgui_TeamFortressViewport.h"
 
+#include "mp3.h"
+
 #define MAX_LOGO_FRAMES 56
 
 int grgLogoFrame[MAX_LOGO_FRAMES] = 
@@ -79,6 +81,8 @@ void CHud::Think(void)
 	{  // only let players adjust up in fov,  and only if they are not overriden by something else
 		m_iFOV = max( default_fov->value, 90 );  
 	}
+	// Ku2zoff
+	gMP3.Volume();
 }
 
 //LRC - fog fading values
@@ -272,7 +276,7 @@ int CHud :: DrawHudStringReverse( int xpos, int ypos, int iMinX, char *szString,
 	// iterate throug the string in reverse
 	for ( szIt--;  szIt != (szString-1);  szIt-- )	
 	{
-		int next = xpos + ChWidth( *szIt );
+		int next = xpos - ChWidth( *szIt );
 
 		if ( next < iMinX )
 			return xpos;

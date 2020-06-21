@@ -20,7 +20,10 @@ private:
 	FSOUND_STREAM*		(_stdcall * SO)	(const char *filename, unsigned int mode,int offset, int memlength);	//AJH use new fmod
 	int 			(_stdcall * SPLAY)	(int channel, FSOUND_STREAM *stream);
 	void			(_stdcall * CLOSE)	( void );
-	
+	// Ku2zoff
+	signed char		(_stdcall * SETVOLUME)	(int channel, int vol );
+    signed char     (_stdcall * PAUSE) (int channel, signed char paused);	
+
 	FSOUND_STREAM  *m_Stream;
 	int		m_iIsPlaying;
 	HINSTANCE	m_hFMod;
@@ -28,8 +31,10 @@ private:
 public:
 	int		Initialize();
 	int		Shutdown();
-	int		PlayMP3( const char *pszSong );
+	int		PlayMP3( const char *pszSong, int iLoop );
 	int		StopMP3();
+	// Ku2zoff
+	int		Volume();
 };
 
 extern CMP3 gMP3;

@@ -53,7 +53,6 @@ extern "C"
 
 // HLDM
 void EV_FireNull(event_args_t *args);
-void EV_FireCrowbar(struct event_args_s *args);
 void EV_FireGlock1( struct event_args_s *args  );
 void EV_FireMP5( struct event_args_s *args  );
 void EV_FirePython( struct event_args_s *args  );
@@ -322,70 +321,6 @@ vec3_t EV_MirrorPos( vec3_t endpos )
 //======================
 //	START DECALS
 //======================
-void EV_HLDM_FindHullIntersection( int idx, vec3_t vecSrc, pmtrace_t pTrace, float *mins, float *maxs )
-{
-	int			i, j, k;
-	float		distance;
-	float		*minmaxs[2] = {mins, maxs};
-	pmtrace_t tmpTrace;
-	vec3_t		vecHullEnd = pTrace.endpos;
-	vec3_t		vecEnd;
-
-	distance = 1e6f;
-
-	vecHullEnd = vecSrc + ((vecHullEnd - vecSrc)*2);
-	
-	gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction( false, true );
-	// Store off the old count
-	gEngfuncs.pEventAPI->EV_PushPMStates();
-	
-	// Now add in all of the players.
-	gEngfuncs.pEventAPI->EV_SetSolidPlayers ( idx - 1 );	
-
-	gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
-	gEngfuncs.pEventAPI->EV_PlayerTrace( vecSrc, vecHullEnd, PM_STUDIO_BOX, -1, &tmpTrace );
-	gEngfuncs.pEventAPI->EV_PopPMStates();
-	
-	if ( tmpTrace.fraction < 1.0 )
-	{
-		pTrace = tmpTrace;
-		return;
-	}
-
-	for ( i = 0; i < 2; i++ )
-	{
-		for ( j = 0; j < 2; j++ )
-		{
-			for ( k = 0; k < 2; k++ )
-			{
-				vecEnd.x = vecHullEnd.x + minmaxs[i][0];
-				vecEnd.y = vecHullEnd.y + minmaxs[j][1];
-				vecEnd.z = vecHullEnd.z + minmaxs[k][2];
-                                        
-                                        gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction( false, true );
-                                        // Store off the old count
-				gEngfuncs.pEventAPI->EV_PushPMStates();
-	
-				// Now add in all of the players.
-				gEngfuncs.pEventAPI->EV_SetSolidPlayers ( idx - 1 );	
-
-				gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
-				gEngfuncs.pEventAPI->EV_PlayerTrace( vecSrc, vecEnd, PM_STUDIO_BOX, -1, &tmpTrace );
-				gEngfuncs.pEventAPI->EV_PopPMStates();
-				
-				if ( tmpTrace.fraction < 1.0 )
-				{
-					float thisDistance = (tmpTrace.endpos - vecSrc).Length();
-					if ( thisDistance < distance )
-					{
-						pTrace = tmpTrace;
-						distance = thisDistance;
-					}
-				}
-			}
-		}
-	}
-}
 
 char *EV_HLDM_DamageDecal( physent_t *pe )
 {
@@ -487,9 +422,6 @@ void EV_HLDM_DecalGunshot( pmtrace_t *pTrace, int iBulletType )
 	{
 		switch( iBulletType )
 		{
-		case BULLET_PLAYER_CROWBAR:
-			EV_HLDM_CrowbarDecalTrace( pTrace, EV_HLDM_DamageDecal( pe ) );
-			break;
 		case BULLET_PLAYER_9MM:
 		case BULLET_MONSTER_9MM:
 		case BULLET_PLAYER_MP5:
@@ -665,141 +597,7 @@ void EV_HLDM_FireBullets( int idx, float *forward, float *right, float *up, int 
 		gEngfuncs.pEventAPI->EV_PopPMStates();
 	}
 }
-//======================
-//	   CROWBAR START
-//======================
-enum crowbar_e {
-	CROWBAR_IDLE = 0,
-	CROWBAR_DRAW,
-	CROWBAR_HOLSTER,
-	CROWBAR_ATTACK1HIT,
-	CROWBAR_ATTACK1MISS,
-	CROWBAR_ATTACK2MISS,
-	CROWBAR_ATTACK2HIT,
-	CROWBAR_ATTACK3MISS,
-	CROWBAR_ATTACK3HIT
-};
 
-int g_iSwing;
-
-void EV_FireCrowbar(event_args_t *args)
-{
-	int idx;
-	vec3_t origin;
-	vec3_t angles;
-	vec3_t velocity;
-          vec3_t up, right, forward;
-	physent_t *pHit;
-	pmtrace_t tr;
-	
-	idx = args->entindex;
-	VectorCopy( args->angles, angles );
-	VectorCopy( args->origin, origin );
-	vec3_t vecSrc, vecEnd;
-          
-          AngleVectors( angles, forward, right, up );
-	
-	EV_GetGunPosition( args, vecSrc, origin );
-	vecEnd = vecSrc + forward * 32;	
-          
-	//make trace 
-	gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction( false, true );
-	gEngfuncs.pEventAPI->EV_PushPMStates();
-	gEngfuncs.pEventAPI->EV_SetSolidPlayers ( idx - 1 );	
-	gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
-	gEngfuncs.pEventAPI->EV_PlayerTrace( vecSrc, vecEnd, PM_STUDIO_BOX, -1, &tr );
-	gEngfuncs.pEventAPI->EV_PopPMStates();
-
-	if ( tr.fraction >= 1.0 )
-	{
-		gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction( false, true );
-		gEngfuncs.pEventAPI->EV_PushPMStates();
-		gEngfuncs.pEventAPI->EV_SetSolidPlayers ( idx - 1 );	
-		gEngfuncs.pEventAPI->EV_SetTraceHull( 2 );
-		gEngfuncs.pEventAPI->EV_PlayerTrace( vecSrc, vecEnd, PM_STUDIO_BOX, -1, &tr );
-		gEngfuncs.pEventAPI->EV_PopPMStates();
-
-		if ( tr.fraction < 1.0 )
-		{
-			// Calculate the point of intersection of the line (or hull) and the object we hit
-			// This is and approximation of the "best" intersection
-			pHit = gEngfuncs.pEventAPI->EV_GetPhysent( tr.ent );
-
-			if ( !pHit || pHit->solid == SOLID_BSP )
-				EV_HLDM_FindHullIntersection( idx, vecSrc, tr, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX );
-				vecEnd = tr.endpos;	// This is the point on the actual surface (the hull could have hit space)
-		}
-	}
-	if ( tr.fraction >= 1.0 )
-	{
-		if(args->iparam2) //fFirst
-		{
-			if ( EV_IsLocal( idx ) )
-			{
-				// miss
-				switch( (g_iSwing++) % 3 )
-				{
-				case 0: gEngfuncs.pEventAPI->EV_WeaponAnimation ( CROWBAR_ATTACK1MISS, args->iparam1 ); break;
-				case 1: gEngfuncs.pEventAPI->EV_WeaponAnimation ( CROWBAR_ATTACK2MISS, args->iparam1 ); break;
-				case 2: gEngfuncs.pEventAPI->EV_WeaponAnimation ( CROWBAR_ATTACK3MISS, args->iparam1 ); break;
-				}
-			}
-
-			// play wiff or swish sound
-			gEngfuncs.pEventAPI->EV_PlaySound( idx, origin, CHAN_WEAPON, "weapons/cbar_miss1.wav", 1, ATTN_NORM, 0, 94 + gEngfuncs.pfnRandomLong( 0, 0xF ));
-		}
-	}
-	else
-	{
-		if ( EV_IsLocal( idx ) )
-		{
-			switch( ((g_iSwing++) % 2) + 1 )
-			{
-			case 0: gEngfuncs.pEventAPI->EV_WeaponAnimation ( CROWBAR_ATTACK1HIT, args->iparam1 ); break;
-			case 1: gEngfuncs.pEventAPI->EV_WeaponAnimation ( CROWBAR_ATTACK2HIT, args->iparam1 ); break;
-			case 2: gEngfuncs.pEventAPI->EV_WeaponAnimation ( CROWBAR_ATTACK3HIT, args->iparam1 ); break;
-			}
-		}
-
-		// play thwack, smack, or dong sound
-		float flVol = 1.0;
-		int fHitWorld = TRUE;
-  		pHit = gEngfuncs.pEventAPI->EV_GetPhysent( tr.ent );
-  		
-		if (pHit)
-		{
-			if ( args->bparam1 )
-			{	// play thwack or smack sound
-				switch( gEngfuncs.pfnRandomLong(0,2) )
-				{
-				case 0: gEngfuncs.pEventAPI->EV_PlaySound( idx, origin, CHAN_WEAPON, "weapons/cbar_hitbod1.wav", 1, ATTN_NORM, 0, PITCH_NORM); break;
-				case 1: gEngfuncs.pEventAPI->EV_PlaySound( idx, origin, CHAN_WEAPON, "weapons/cbar_hitbod2.wav", 1, ATTN_NORM, 0, PITCH_NORM); break;
-				case 2: gEngfuncs.pEventAPI->EV_PlaySound( idx, origin, CHAN_WEAPON, "weapons/cbar_hitbod3.wav", 1, ATTN_NORM, 0, PITCH_NORM); break;
-				}
-				fHitWorld = FALSE;
-				args->bparam1 = FALSE; //hit monster
-			}
-		}
-
-		if (fHitWorld)
-		{
-			float fvolbar = EV_HLDM_PlayTextureSound( idx, &tr, vecSrc, vecSrc + (vecEnd-vecSrc)*2, BULLET_PLAYER_CROWBAR );
-
-			// also play crowbar strike
-			switch( gEngfuncs.pfnRandomLong(0,1) )
-			{
-			case 0: gEngfuncs.pEventAPI->EV_PlaySound( idx, origin, CHAN_WEAPON, "weapons/cbar_hit1.wav", fvolbar, ATTN_NORM, 0, 98 + gEngfuncs.pfnRandomLong(0,3)); break;
-			case 1: gEngfuncs.pEventAPI->EV_PlaySound( idx, origin, CHAN_WEAPON, "weapons/cbar_hit2.wav", fvolbar, ATTN_NORM, 0, 98 + gEngfuncs.pfnRandomLong(0,3)); break;
-			}
-
-			// delay the decal a bit
-			EV_HLDM_DecalGunshot( &tr, BULLET_PLAYER_CROWBAR );
-		}
-	}
-}
-//======================
-//	   CROWBAR END 
-//======================
 //======================
 //	    GLOCK START
 //======================
@@ -1657,8 +1455,8 @@ void EV_Decals( struct event_args_s *args )
 	int idx;
 	pmtrace_t tr;
 	pmtrace_t *pTrace = &tr;
-          physent_t *pe;
-          
+    physent_t *pe;
+
 	idx = args->entindex;
 	VectorCopy( args->origin, pTrace->endpos );
 	pTrace->ent = args->iparam1; 
@@ -1718,8 +1516,13 @@ void EV_Decals( struct event_args_s *args )
 	}
 	if(args->iparam2 == 6)//monsters shoot
 	{
-           	if ( pe && pe->solid == SOLID_BSP )
+		if ( pe && pe->solid == SOLID_BSP )
 			EV_HLDM_GunshotDecalTrace( pTrace, EV_HLDM_DamageDecal( pe ) );
+	}
+	if(args->iparam2 == 7)//crowbar hit
+	{
+		if ( pe && pe->solid == SOLID_BSP )
+			EV_HLDM_CrowbarDecalTrace( pTrace, EV_HLDM_DamageDecal( pe ) );
 	}
 }
 //======================

@@ -71,7 +71,9 @@ void CGlock::Spawn( )
 
 void CGlock::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.8;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.8;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	SendWeaponAnim( GLOCK_HOLSTER );
 }
 
@@ -100,9 +102,16 @@ int CGlock::GetItemInfo(ItemInfo *p)
 	p->iMaxAmmo1 = _9MM_MAX_CARRY;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
-	// scrama: altweapons
-	if (CVAR_GET_FLOAT ("sv_altweapons") ) p->iMaxClip = GLOCK_MAX_ALTCLIP;
-	else p->iMaxClip = GLOCK_MAX_CLIP;
+
+	if ( CVAR_GET_FLOAT("sv_noreload") ) // Ku2zoff
+		p->iMaxClip = WEAPON_NOCLIP;
+	else
+	{
+		// scrama: altweapons
+		if (CVAR_GET_FLOAT ("sv_altweapons") ) p->iMaxClip = GLOCK_MAX_ALTCLIP;
+		else p->iMaxClip = GLOCK_MAX_CLIP;
+	}
+
 	p->iSlot = 1;
 	p->iPosition = 0;
 	p->iFlags = 0;
@@ -121,27 +130,120 @@ BOOL CGlock::Deploy( )
 
 void CGlock::SecondaryAttack( void )
 {
-	if(m_iBody == 0)
+	if(CVAR_GET_FLOAT("sv_altweapons")) // beretta
 	{
-		SendWeaponAnim( GLOCK_HOLSTER2);
-		m_iBody = 1;
-		m_iOverloadLevel = 1;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.5;
+		if(m_iBody == 0)
+		{
+			SendWeaponAnim( GLOCK_HOLSTER2);
+			m_iBody = 1;
+			m_iOverloadLevel = 1;
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.5;
+		}
+		else
+		{
+			SendWeaponAnim( GLOCK_DEL_SILENCER);
+			m_iBody = 0;
+			m_iOverloadLevel = 2;
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3.0;
+		}
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 4.0;
 	}
-	else
+	else // glock 
 	{
-		SendWeaponAnim( GLOCK_DEL_SILENCER);
-		m_iBody = 0;
-		m_iOverloadLevel = 2;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3.0;
+		if ( m_pPlayer->pev->waterlevel != 3)//don't fire underwater
+		{
+			Vector vecDir;
+			Vector vecSrc = m_pPlayer->GetGunPosition( );
+			Vector vecAiming = m_pPlayer->GetAutoaimVector( AUTOAIM_10DEGREES );
+
+			if ( CVAR_GET_FLOAT("sv_noreload") )
+			{
+				if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0)
+				{
+					PlayEmptySound();
+					m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.7;
+					return;
+				}
+ 				if(m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 1) 
+				{
+					vecDir = m_pPlayer->FireBulletsPlayer( 1, vecSrc, vecAiming, Vector( 0.02, 0.03, 0.02 ), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
+					PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireGlock, 0.05, (float *)&g_vecZero, (float *)&g_vecZero, vecDir.x, vecDir.y, pev->body, 0, ( m_iClip == 0 ) ? 1 : 0, 0 );
+				}
+				if(m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 2) 
+				{
+					vecDir = m_pPlayer->FireBulletsPlayer( 1, vecSrc, vecAiming, Vector( 0.02, 0.04, 0.02 ), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
+					PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireGlock, 0.1, (float *)&g_vecZero, (float *)&g_vecZero, vecDir.x, vecDir.y, pev->body, 0, ( m_iClip == 0 ) ? 1 : 0, 0 );
+				}
+				m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]-= 3;
+				if(m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] < 0) m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] = 0;
+			}
+			else
+			{
+				if(m_iClip <= 0)
+				{
+					PlayEmptySound();
+					m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.7;
+					return;
+				}
+ 				if(m_iClip > 1) 
+				{
+					vecDir = m_pPlayer->FireBulletsPlayer( 1, vecSrc, vecAiming, Vector( 0.02, 0.03, 0.02 ), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
+					PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireGlock, 0.05, (float *)&g_vecZero, (float *)&g_vecZero, vecDir.x, vecDir.y, pev->body, 0, ( m_iClip == 0 ) ? 1 : 0, 0 );
+				}
+				if(m_iClip > 2) 
+				{
+					vecDir = m_pPlayer->FireBulletsPlayer( 1, vecSrc, vecAiming, Vector( 0.02, 0.04, 0.02 ), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
+					PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireGlock, 0.1, (float *)&g_vecZero, (float *)&g_vecZero, vecDir.x, vecDir.y, pev->body, 0, ( m_iClip == 0 ) ? 1 : 0, 0 );
+				}
+				m_iClip-= 3;
+				if(m_iClip < 0) m_iClip = 0;  
+			}
+
+			// player "shoot" animation
+			m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
+
+			m_pPlayer->m_iWeaponVolume = NORMAL_GUN_VOLUME;
+			m_pPlayer->m_iWeaponFlash = NORMAL_GUN_FLASH;
+
+			vecDir = m_pPlayer->FireBulletsPlayer( 1, vecSrc, vecAiming, Vector( 0.02, 0.02, 0.02 ), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
+			PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireGlock, 0.0, (float *)&g_vecZero, (float *)&g_vecZero, vecDir.x, vecDir.y, pev->body, 0, ( m_iClip == 0 ) ? 1 : 0, 0 );
+
+			m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.75;
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + RANDOM_FLOAT ( 10, 15 );
+		}
+		else
+		{
+			PlayEmptySound();
+			m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.7;
+		}
 	}
-	m_flNextSecondaryAttack = m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 4.0;
 }
 
 void CGlock::PrimaryAttack( void )
 {
-	if ( m_iClip && m_pPlayer->pev->waterlevel != 3)//don't fire underwater
+	if ( m_pPlayer->pev->waterlevel != 3)//don't fire underwater
 	{
+		if ( CVAR_GET_FLOAT("sv_noreload") )
+		{
+			if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+			{
+				PlayEmptySound();
+				m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.7;
+				return;
+			}
+			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		}
+		else
+		{
+			if(m_iClip <= 0)
+			{
+				PlayEmptySound();
+				m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.7;
+				return;
+			}
+			m_iClip--;
+		}
+
 		// player "shoot" animation
 		m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
 
@@ -158,15 +260,10 @@ void CGlock::PrimaryAttack( void )
 			m_pPlayer->m_iWeaponFlash = NORMAL_GUN_FLASH;
 		}
 
-		m_iClip--;
+		Vector vecSrc = m_pPlayer->GetGunPosition( );
+		Vector vecAiming = m_pPlayer->GetAutoaimVector( AUTOAIM_10DEGREES );
 
-		Vector vecSrc	 = m_pPlayer->GetGunPosition( );
-		Vector vecAiming;
-	
-		vecAiming = m_pPlayer->GetAutoaimVector( AUTOAIM_10DEGREES );
-
-		Vector vecDir;
-		vecDir = m_pPlayer->FireBulletsPlayer( 1, vecSrc, vecAiming, Vector( 0.02, 0.02, 0.02 ), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
+		Vector vecDir = m_pPlayer->FireBulletsPlayer( 1, vecSrc, vecAiming, Vector( 0.02, 0.02, 0.02 ), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
 
 		PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireGlock, 0.0, (float *)&g_vecZero, (float *)&g_vecZero, vecDir.x, vecDir.y, pev->body, 0, ( m_iClip == 0 ) ? 1 : 0, m_iBody );
 
@@ -176,12 +273,14 @@ void CGlock::PrimaryAttack( void )
 	else
 	{
 		PlayEmptySound();
-		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.7;
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.7;
 	}
 }
 
 void CGlock::Reload( void )
 {
+	if ( CVAR_GET_FLOAT("sv_noreload") ) return;
+
 	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0) return;
 
 	// scrama: altweapons

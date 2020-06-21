@@ -105,7 +105,10 @@ public:
 	int m_fAction;
 	int m_iFinishSchedule;
 	float m_flRadius;		// range to search
-	float m_flRepeat;	// repeat rate
+
+	int m_iRepeats; //LRC - number of times to repeat the animation
+	int m_iRepeatsLeft; //LRC
+	int m_fTurnType;
 
 	int m_iDelay;
 	float m_startTime;

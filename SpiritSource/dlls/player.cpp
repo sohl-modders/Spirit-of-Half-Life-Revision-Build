@@ -3474,7 +3474,7 @@ BOOL CBasePlayer :: FlashlightIsOn( void )
 {
 // scrama: nightvision or flashlight
 	if (CVAR_GET_FLOAT("sv_nightvision"))
-		return FBitSet(pev->effects, EF_BRIGHTLIGHT);
+		return FBitSet(pev->effects, EF_INVLIGHT);
 	return FBitSet(pev->effects, EF_DIMLIGHT);
 }
 
@@ -3489,7 +3489,7 @@ void CBasePlayer :: FlashlightTurnOn( void )
 		if(m_iFlashBattery)
 		{
 			if (CVAR_GET_FLOAT("sv_nightvision"))
-				SetBits(pev->effects, EF_BRIGHTLIGHT);
+				SetBits(pev->effects, EF_INVLIGHT);
 			else
 				SetBits(pev->effects, EF_DIMLIGHT);
 		}
@@ -3501,7 +3501,7 @@ void CBasePlayer :: FlashlightTurnOff( void )
 {
 	EMIT_SOUND_DYN( ENT(pev), CHAN_WEAPON, SOUND_FLASHLIGHT_OFF, 1.0, ATTN_NORM, 0, PITCH_NORM );
 	if (CVAR_GET_FLOAT("sv_nightvision"))
-		ClearBits(pev->effects, EF_BRIGHTLIGHT);
+		ClearBits(pev->effects, EF_INVLIGHT);
 	else
 		ClearBits(pev->effects, EF_DIMLIGHT);
 
@@ -4413,25 +4413,35 @@ void CBasePlayer :: UpdateClientData( void )
 	{
 		if (FlashlightIsOn())
 		{
-			if (m_iFlashBattery )
+			if (m_iFlashBattery)
 			{
-				m_iFlashBattery--;
+				if (!IsMultiplayer()) m_iFlashBattery--; // don't discharge flashlight in MP
 				if (!m_iFlashBattery) FlashlightTurnOff();
 				m_flFlashLightTime = FLASH_DRAIN_TIME + gpGlobals->time;
 			}
 		}
-		else if(pev->armorvalue > 1) 
+		else if ((CVAR_GET_FLOAT("sv_flashcharge") == 2) || // armor only
+			(CVAR_GET_FLOAT("sv_flashcharge") == 3))    // both batteries & armor    
+		{
+			if(pev->armorvalue > 1) 
+			{
+				if(m_iFlashBattery < 99 )
+				{
+					m_iFlashBattery++;
+					pev->armorvalue -= (0.05 * gSkillData.flashlightCharge);//g-cont. scale factor
+					m_flFlashLightTime = FLASH_CHARGE_TIME + gpGlobals->time;
+				}
+			}
+			else m_flFlashLightTime = 0;
+		}
+		else if (CVAR_GET_FLOAT("sv_flashcharge") != 1)
 		{
 			if(m_iFlashBattery < 99 )
 			{
-				
 				m_iFlashBattery++;
-				pev->armorvalue -= (0.05 * gSkillData.flashlightCharge);//g-cont. scale factor
 				m_flFlashLightTime = FLASH_CHARGE_TIME + gpGlobals->time;
 			}
-			
 		}
-		else m_flFlashLightTime = 0;
 	}
 
 	if(m_iFlashBattery != m_iClientFlashlight)

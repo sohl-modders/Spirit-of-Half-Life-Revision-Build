@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="hl" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="server" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
 
-CFG=hl - Win32 Release
+CFG=server - Win32 Release
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "hl.mak".
+!MESSAGE NMAKE /f "server.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "hl.mak" CFG="hl - Win32 Release"
+!MESSAGE NMAKE /f "server.mak" CFG="server - Win32 Release"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "hl - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "hl - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "server - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "server - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -29,17 +29,17 @@ CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "hl - Win32 Release"
+!IF  "$(CFG)" == "server - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir ".\Release"
-# PROP BASE Intermediate_Dir ".\Release"
+# PROP BASE Output_Dir ".\release_server"
+# PROP BASE Intermediate_Dir ".\release_server"
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir ".\Release"
-# PROP Intermediate_Dir ".\Release"
+# PROP Output_Dir ".\release_server"
+# PROP Intermediate_Dir ".\release_server"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
@@ -51,33 +51,33 @@ RSC=rc.exe
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
-# ADD BSC32 /nologo /o".\Release/server.bsc"
+# ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:windows /dll /pdb:none /machine:I386 /def:".\hl.def" /out:".\Release/spirit.dll"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:windows /dll /pdb:none /machine:I386 /def:".\server.def"
 # SUBTRACT LINK32 /profile /map /debug
 # Begin Custom Build - Custom Build in progress
-TargetDir=.\Release
-InputPath=.\Release\spirit.dll
+TargetDir=.\release_server
+InputPath=.\release_server\server.dll
 SOURCE="$(InputPath)"
 
 "..\..\..\cl_dlls\server.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(TargetDir)\spirit.dll "..\..\..\cl_dlls\server.dll"
+	copy $(TargetDir)\server.dll "..\..\..\cl_dlls\server.dll"
 
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "hl - Win32 Debug"
+!ELSEIF  "$(CFG)" == "server - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir "hl___Win32_Debug"
-# PROP BASE Intermediate_Dir "hl___Win32_Debug"
+# PROP BASE Output_Dir "server___Win32_Debug"
+# PROP BASE Intermediate_Dir "server___Win32_Debug"
 # PROP BASE Ignore_Export_Lib 0
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir ".\Release"
-# PROP Intermediate_Dir ".\Release"
+# PROP Output_Dir ".\debug_server"
+# PROP Intermediate_Dir ".\debug_server"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /G5 /MT /W3 /O1 /I "..\dlls" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\game_shared" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "QUIVER" /D "VOXEL" /D "QUAKE2" /D "VALVE_DLL" /YX /FD /c
@@ -89,20 +89,20 @@ SOURCE="$(InputPath)"
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
-# ADD BASE BSC32 /nologo /o".\Release/server.bsc"
-# ADD BSC32 /nologo /o".\Release/server.bsc"
+# ADD BASE BSC32 /nologo /o".\debug_server/server.bsc"
+# ADD BSC32 /nologo
 LINK32=link.exe
-# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:windows /dll /machine:I386 /def:".\hl.def" /out:".\Release/spirit.dll"
+# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:windows /dll /machine:I386 /def:".\server.def" /out:".\debug_server/server.dll"
 # SUBTRACT BASE LINK32 /profile /map /debug
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:windows /dll /incremental:yes /debug /machine:I386 /def:".\hl.def" /out:".\Release/spirit.dll"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:windows /dll /incremental:yes /debug /machine:I386 /def:".\server.def"
 # SUBTRACT LINK32 /profile /map
 # Begin Custom Build - Custom Build in progress
-TargetDir=.\Release
-InputPath=.\Release\spirit.dll
+TargetDir=.\debug_server
+InputPath=.\debug_server\server.dll
 SOURCE="$(InputPath)"
 
 "..\..\..\cl_dlls\server.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	rem copy $(TargetDir)\spirit.dll "..\..\..\cl_dlls\server.dll"
+	copy $(TargetDir)\server.dll "..\..\..\cl_dlls\server.dll"
 
 # End Custom Build
 
@@ -110,8 +110,8 @@ SOURCE="$(InputPath)"
 
 # Begin Target
 
-# Name "hl - Win32 Release"
-# Name "hl - Win32 Debug"
+# Name "server - Win32 Release"
+# Name "server - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"

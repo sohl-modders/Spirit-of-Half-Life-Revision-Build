@@ -308,6 +308,8 @@ public:
 
 	void DesiredAction( void );
 	void EXPORT Think( void );
+private:
+	byte *data;
 };
 
 LINK_ENTITY_TO_CLASS( func_shine, CFuncShine );
@@ -319,8 +321,9 @@ void CFuncShine :: Spawn( void )
 	SET_MODEL( ENT(pev), STRING(pev->model) );
 	pev->effects |= EF_NODRAW;
 
-	// not that we actually need to precache it here, but we do need to make sure it exists
-	PRECACHE_MODEL( (char*)STRING(pev->message) );
+	data = LOAD_FILE_FOR_ME((char*)STRING(pev->message), NULL);
+	if (data) PRECACHE_MODEL( (char*)STRING(pev->message) );
+	else PRECACHE_MODEL( "sprites/error.spr" );
 }
 
 void CFuncShine :: Activate( void )
@@ -351,7 +354,16 @@ void CFuncShine :: Think( void )
 		WRITE_COORD(pev->absmin.y + 2);
 		WRITE_COORD(pev->absmax.y - 2);
 		WRITE_COORD(pev->absmin.z + 2);
-		WRITE_STRING(STRING(pev->message));
+		if (data) 
+		{
+			FREE_FILE(data);
+			WRITE_STRING(STRING(pev->message));
+		}
+		else
+		{
+			ALERT(at_console, "FuncShine: couldn't load %s\n", (char*)STRING(pev->message));
+			WRITE_STRING("sprites/error.spr");
+		}
 	MESSAGE_END();
 }
 

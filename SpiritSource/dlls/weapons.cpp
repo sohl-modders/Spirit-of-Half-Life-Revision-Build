@@ -1474,6 +1474,11 @@ void CWeaponBox::Kill( void )
 //=========================================================
 void CWeaponBox::Touch( CBaseEntity *pOther )
 {
+	if ( pOther->IsBSPModel() )
+    {
+        EMIT_SOUND_DYN(ENT(pev), CHAN_VOICE, "items/weapondrop1.wav", 1, ATTN_NORM, 0, PITCH_NORM);
+    }
+
 	if ( !(pev->flags & FL_ONGROUND ) )
 	{
 		return;
@@ -1587,6 +1592,49 @@ BOOL CWeaponBox::PackWeapon( CBasePlayerItem *pWeapon )
 	pWeapon->m_pPlayer = NULL;
 
 	//ALERT ( at_console, "packed %s\n", STRING(pWeapon->pev->classname) );
+
+	if(!pWeapon->SavedModelIndex)
+	{
+		pWeapon->SavedModelIndex = pWeapon->pev->modelindex;
+		pWeapon->SavedModel = pWeapon->pev->model;
+	}
+
+	pWeapon->pev->modelindex = NULL;
+	pWeapon->pev->model = iStringNull;
+	pWeapon->pev->owner = edict();
+	pWeapon->SetThink( NULL );
+	pWeapon->SetTouch( NULL );
+	pWeapon->m_pPlayer = NULL;
+
+//	ALERT ( at_console, "packed %s\n", STRING(pWeapon->pev->classname) );
+
+	if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_crowbar")))
+	{
+		SET_MODEL( ENT(pev), "models/w_crowbar.mdl");
+		return FALSE;
+	}
+
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_9mmhandgun")))
+		SET_MODEL( ENT(pev), "models/w_9mmhandgun.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_357")))
+		SET_MODEL( ENT(pev), "models/w_357.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_shotgun")))
+		SET_MODEL( ENT(pev), "models/w_shotgun.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_9mmAR")))
+    SET_MODEL( ENT(pev), "models/w_9mmAR.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_crossbow")))
+		SET_MODEL( ENT(pev), "models/w_crossbow.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_rpg")))
+		SET_MODEL( ENT(pev), "models/w_rpg.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_gauss")))
+		SET_MODEL( ENT(pev), "models/w_gauss.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_hornetgun")))
+		SET_MODEL( ENT(pev), "models/w_hgun.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_egon")))
+		SET_MODEL( ENT(pev), "models/w_egon.mdl");
+	else if ((!strcmp((char *)STRING( pWeapon->pev->classname ), "weapon_snark")))
+		SET_MODEL( ENT(pev), "models/w_squeak.mdl");
+
 
 	return TRUE;
 }

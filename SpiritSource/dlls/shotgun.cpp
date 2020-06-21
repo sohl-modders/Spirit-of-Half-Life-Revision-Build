@@ -93,7 +93,8 @@ int CShotgun::GetItemInfo(ItemInfo *p)
 	p->iMaxAmmo1 = BUCKSHOT_MAX_CARRY;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
-	p->iMaxClip = SHOTGUN_MAX_CLIP;
+	if(CVAR_GET_FLOAT("sv_noreload")) 	p->iMaxClip = WEAPON_NOCLIP;
+	else p->iMaxClip = SHOTGUN_MAX_CLIP;
 	p->iSlot = 2;
 	p->iPosition = 1;
 	p->iFlags = 0;
@@ -110,7 +111,9 @@ BOOL CShotgun::Deploy( )
 
 void CShotgun::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	SendWeaponAnim( SHOTGUN_HOLSTER );
 }
 
@@ -124,17 +127,30 @@ void CShotgun::PrimaryAttack()
 		return;
 	}
 
-	if (m_iClip == 0)
+	if(CVAR_GET_FLOAT("sv_noreload"))
 	{
-		PlayEmptySound( 4 );
-		Reload( );
-		return;
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+		{
+			PlayEmptySound( 4 );
+			Reload( );
+			return;
+		}
+		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	}
+	else
+	{
+		if (m_iClip == 0)
+		{
+			PlayEmptySound( 4 );
+			Reload( );
+			return;
+		}
+		m_iClip--;
 	}
 
 	m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = NORMAL_GUN_FLASH;
 
-	m_iClip--;
 	m_pPlayer->pev->effects = (int)(m_pPlayer->pev->effects) | EF_MUZZLEFLASH;
 
 	Vector vecSrc	 = m_pPlayer->GetGunPosition( );
@@ -158,15 +174,19 @@ void CShotgun::PrimaryAttack()
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 1.0;
 	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.0;
 
-	if (m_iClip != 0) m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 5.0;
-	else 		  m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.9;
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 5.0;
 	m_iChargeLevel = 0;
 }
 
 
 void CShotgun::SecondaryAttack( void )
 {
-	if ( CVAR_GET_FLOAT ("sv_altweapons") ) return;	// scrama: no secondary attack at altrules
+	if ( CVAR_GET_FLOAT ("sv_altweapons") ) // scrama: no secondary attack at altrules
+	{
+		PrimaryAttack(); // perform the primary attack - Ku2zoff
+		return;	
+	}
+
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3 )
 	{
@@ -175,23 +195,39 @@ void CShotgun::SecondaryAttack( void )
 		return;
 	}
 
-	if (m_iClip == 1)
+	if(CVAR_GET_FLOAT("sv_noreload"))
 	{
-		PrimaryAttack();
-		return;
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+		{
+			PlayEmptySound( 4 );
+			Reload( );
+			return;
+		}
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 1)
+		{
+			PrimaryAttack();
+			return;
+		}
+		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]-= 2;
 	}
-
-	if (m_iClip == 0)
+	else
 	{
-		PlayEmptySound( 4 );
-		Reload( );
-		return;
+		if (m_iClip == 0)
+		{
+			PlayEmptySound( 4 );
+			Reload( );
+			return;
+		}
+		if (m_iClip == 1)
+		{
+			PrimaryAttack();
+			return;
+		}
+		m_iClip -= 2;
 	}
 
 	m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = NORMAL_GUN_FLASH;
-
-	m_iClip -= 2;
 
 	m_pPlayer->pev->effects = (int)(m_pPlayer->pev->effects) | EF_MUZZLEFLASH;
 
@@ -218,8 +254,7 @@ void CShotgun::SecondaryAttack( void )
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 1.5;
 	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.5;
 
-	if (m_iClip != 0) m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 6.0;
-	else	        m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.9;
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 6.0;
 	m_iChargeLevel = 0;
 	m_pPlayer->pev->punchangle.x -= 5;
 }
@@ -227,6 +262,8 @@ void CShotgun::SecondaryAttack( void )
 
 void CShotgun::Reload( void )
 {
+	if(CVAR_GET_FLOAT("sv_noreload")) return;
+
 	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 || m_iClip == SHOTGUN_MAX_CLIP) return;
 
 	// don't reload until recoil is done

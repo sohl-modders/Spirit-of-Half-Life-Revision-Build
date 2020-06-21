@@ -194,29 +194,6 @@ typedef enum
 
 } MONSTERSTATE;
 
-typedef enum
-{
-	USE_OFF = 0,
-	USE_ON = 1,
-	USE_SET = 2,
-	USE_TOGGLE = 3,
-	USE_KILL = 4,
-	USE_SHOWINFO = 5,
-} USE_TYPE;
-
-//LRC- the values used for the new "global states" mechanism.
-typedef enum
-{
-	STATE_OFF = 0,	// disabled, inactive, invisible, closed, or stateless. Or non-alert monster.
-	STATE_TURN_ON,  // door opening, env_fade fading in, etc.
-	STATE_ON,		// enabled, active, visisble, or open. Or alert monster.
-	STATE_TURN_OFF, // door closing, monster dying (?).
-	STATE_IN_USE,	// player is in control (train/tank/barney/scientist).
-					// In_Use isn't very useful, I'll probably remove it.
-} STATE;
- 
-extern char* GetStringForState( STATE state );
-
 // Things that toggle (buttons/triggers/doors) need this
 typedef enum
 	{
@@ -539,6 +516,7 @@ int SENTENCEG_Lookup(const char *sample, char *sentencenum);
 
 void TEXTURETYPE_Init();
 char TEXTURETYPE_Find(char *name);
+int TEXTURETYPE_Trace( Vector vecSrc, Vector vecEnd, CBaseEntity *pEntity ); // Ku2zoff
 float TEXTURETYPE_PlaySound(TraceResult *ptr,  Vector vecSrc, Vector vecEnd, int iBulletType);
 
 // NOTE: use EMIT_SOUND_DYN to set the pitch of a sound. Pitch of 100
@@ -609,5 +587,10 @@ int HaveCamerasInPVS( edict_t* edict );
 BOOL IsMultiplayer ( void );
 Vector UTIL_MirrorVector( Vector angles );
 Vector UTIL_MirrorPos ( Vector endpos );
+
+// Ku2zoff - Xash Particle System
+int UTIL_PrecacheAurora( string_t s );
+int UTIL_PrecacheAurora( const char *s );
+void UTIL_SetAurora( CBaseEntity *pAttach, int aur, int attachment = 0 );
 
 #endif //UTIL_H

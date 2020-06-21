@@ -22,6 +22,9 @@
 #include "items.h"
 #include "gamerules.h"
 
+#define SF_WALLHEALTH_SPEC    1
+#define SF_WALLHEALTH_SKILL    2
+
 extern int gmsgItemPickup;
 
 class CHealthKit : public CItem
@@ -75,7 +78,7 @@ BOOL CHealthKit::MyTouch( CBasePlayer *pPlayer )
 
 	if ( pPlayer->TakeHealth( gSkillData.healthkitCapacity, DMG_GENERIC ) )
 	{
-		MESSAGE_BEGIN( MSG_ONE, gmsgItemPickup, NULL, pPlayer->pev );
+		MESSAGE_BEGIN( MSG_ONE, gmsgItemPickup, NULL, ENT(pPlayer->pev) );
 			WRITE_STRING( STRING(pev->classname) );
 		MESSAGE_END();
 
@@ -167,8 +170,20 @@ void CWallHealth::Spawn()
 	UTIL_SetOrigin(this, pev->origin);		// set size and link into world
 	UTIL_SetSize(pev, pev->mins, pev->maxs);
 	SET_MODEL(ENT(pev), STRING(pev->model) );
-	m_iJuice = gSkillData.healthchargerCapacity;
-	pev->frame = 0;			
+
+	if (pev->spawnflags & SF_WALLHEALTH_SKILL)
+		pev->health = (int)GetSkillCvar( (char *)STRING(pev->message) );
+
+	if (pev->spawnflags & SF_WALLHEALTH_SPEC)
+		m_iJuice = max( pev->health, 0);
+	else
+		m_iJuice = gSkillData.healthchargerCapacity;
+
+	if ( m_iJuice > 0 )
+		pev->frame = 0;
+	else
+		pev->frame = 1;
+			
 	//LRC
 	if (m_iStyle >= 32) LIGHT_STYLE(m_iStyle, "a");
 	else if (m_iStyle <= -32) LIGHT_STYLE(-m_iStyle, "z");
@@ -204,7 +219,7 @@ void CWallHealth::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE u
           CBasePlayer *pPlayer = (CBasePlayer *)pActivator;
 	
 	// if the player doesn't have the suit, or there is no juice left, make the deny noise
-	if ((m_iJuice <= 0) || (!(pPlayer->m_iHideHUD & ITEM_SUIT)))
+	if ((m_iJuice <= 0) || (!(pPlayer->m_iHideHUD & ITEM_SUIT)) || (pActivator->pev->health == 100))
 	{
 		if (m_flSoundTime <= gpGlobals->time)
 		{
@@ -294,3 +309,87 @@ STATE CWallHealth::GetState( void )
 	else
 		return STATE_OFF;
 }
+
+//=============================================
+//
+// Health charger Control Entity by Maxwel
+//
+//=============================================
+
+#define SF_WALLHEALTH_CONTROL_ONCE    1
+#define SF_WALLHEALTH_CONTROL_AWARD    2
+#define SF_WALLHEALTH_CONTROL_SKILL    4
+#define SF_WALLHEALTH_CONTROL_NSND    8
+ 
+class CWallHealthControl : public CPointEntity
+{
+public:
+    void Spawn( void );
+    void Precache( void );
+    void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
+private:
+    int m_iPrevJuice;
+};
+LINK_ENTITY_TO_CLASS( trigger_healthcharger_control, CWallHealthControl );
+
+void CWallHealthControl::Precache( void )
+{
+    PRECACHE_SOUND("items/medshotno1.wav");
+    PRECACHE_SOUND("items/medcharge4.wav");
+}
+
+void CWallHealthControl::Spawn(void)
+{
+    Precache();
+    pev->solid = SOLID_NOT;
+    pev->movetype = MOVETYPE_NONE;
+    
+    if (pev->spawnflags & SF_WALLHEALTH_CONTROL_SKILL)
+    {
+        pev->health = (int)GetSkillCvar( (char *)STRING(pev->message) );
+    }
+}
+
+void CWallHealthControl::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
+{
+    CWallHealth *pRecharge = NULL;
+    pRecharge = (CWallHealth *)UTIL_FindEntityByTargetname( NULL, STRING(pev->target) );
+    
+    if (pRecharge)
+    {
+        m_iPrevJuice = pRecharge->m_iJuice;
+        
+        if (pev->spawnflags & SF_WALLHEALTH_CONTROL_AWARD)
+        {
+            pRecharge->m_iJuice += (int)pev->health;
+        }
+        else
+            pRecharge->m_iJuice = (int)pev->health;
+        
+        if (pRecharge->m_iJuice > 0)
+        {
+            pRecharge->pev->frame = 0;
+        }
+        else
+            pRecharge->pev->frame = 1;
+        
+        if (!(pev->spawnflags & SF_WALLHEALTH_CONTROL_NSND))
+        {
+            if ( (m_iPrevJuice <= 0) && (pRecharge->m_iJuice > 0) )
+            {
+                EMIT_SOUND_DYN( ENT(pRecharge->pev), CHAN_STATIC, "items/medcharge4.wav", 1, ATTN_NORM, 0, 150 );
+            }
+            if ( (m_iPrevJuice > 0) && (pRecharge->m_iJuice <= 0) )
+            {
+                EMIT_SOUND_DYN( ENT(pRecharge->pev), CHAN_STATIC, "items/medshotno1.wav", 1, ATTN_NORM, 0, 150 );
+            }
+        }
+    }
+    
+    if (pev->spawnflags & SF_WALLHEALTH_CONTROL_ONCE)
+    {
+        UTIL_Remove( this );
+    }
+}
+
+

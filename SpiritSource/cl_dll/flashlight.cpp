@@ -25,7 +25,8 @@
 #include <string.h>
 #include <stdio.h>
 
-
+// Ku2zoff
+#include "r_efx.h"
 
 DECLARE_MESSAGE(m_Flash, FlashBat)
 DECLARE_MESSAGE(m_Flash, Flashlight)
@@ -129,6 +130,24 @@ int CHudFlashlight::Draw(float flTime)
 				SPR_DrawAdditive(frame, xPos, yPos, NULL);
 			}
 		}
+
+		// Ku2zoff - normal nightvision
+		cl_entity_t *player = gEngfuncs.GetLocalPlayer();
+		vec3_t up, right, forward, origin;
+
+		AngleVectors( player->angles, forward, right, up );
+		origin = player->origin + up*48;
+
+		dlight_t *dl = gEngfuncs.pEfxAPI->CL_AllocDlight( player->index );
+		// die instantly
+		dl->die = gEngfuncs.GetClientTime() + 0.05;
+		dl->origin[0] = origin.x;
+		dl->origin[1] = origin.y;
+		dl->origin[2] = origin.z;
+		dl->radius = 768;
+		dl->color.r = 50;
+		dl->color.g = 250;
+		dl->color.b = 50;
 	} 	
 	
 //	

@@ -203,7 +203,7 @@ unsigned short PRECACHE_EVENT( int type, const char* psz )
 	}
 
 	ALERT(at_console,"Warning: event \"%s\" not found!\n", psz);
-	return g_engfuncs.pfnPrecacheEvent( type, "events/null.sc" );
+	return g_engfuncs.pfnPrecacheEvent( type, "events/crowbar.sc" );
 }
 
 float UTIL_WeaponTimeBase( void )
@@ -2232,7 +2232,7 @@ char* GetStringForUseType( USE_TYPE useType )
 	case USE_SET: return "USE_SET";
 	case USE_KILL: return "USE_KILL";
 	case USE_TOGGLE: return "USE_TOGGLE";
-	case USE_SHOWINFO: return "USE_SHOWINFO";
+	case USE_SAME: return "USE_SAME";
 	default: return "USE_UNKNOWN!?";
 	}
 }
@@ -3287,4 +3287,35 @@ Vector UTIL_MirrorPos ( Vector endpos )
 		pFind = FIND_ENTITY_BY_CLASSNAME( pFind, "env_mirror" );
 	}
 	return mirpos;
+}
+
+//========================================================================
+// Precaches aurora particle and set it - Xash Particle System - Ku2zoff
+//========================================================================
+int UTIL_PrecacheAurora( string_t s ) { return UTIL_PrecacheAurora( (char *)STRING(s)); }
+int UTIL_PrecacheAurora( const char *s )
+{
+	char path[128]; //path length
+	sprintf(path, "particles/%s.aur", s);	
+
+	byte *data = LOAD_FILE_FOR_ME(path, NULL);
+	if (data)
+	{
+		FREE_FILE( data );
+		return ALLOC_STRING(path);
+	}
+	else //otherwise
+	{
+		if(!s || !*s)ALERT(at_console, "Warning: Aurora not specified!\n", s);
+		else ALERT(at_console, "Warning: Aurora %s not found!\n", s);
+		return MAKE_STRING( "particles/error.aur");
+	} 
+}
+
+void UTIL_SetAurora( CBaseEntity *pAttach, int aur, int attachment )
+{
+	MESSAGE_BEGIN( MSG_ALL, gmsgParticle );
+		WRITE_SHORT( pAttach->entindex() );
+		WRITE_STRING( STRING(aur) );
+	MESSAGE_END();
 }

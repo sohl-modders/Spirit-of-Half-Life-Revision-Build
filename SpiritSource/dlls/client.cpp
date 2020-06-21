@@ -83,6 +83,14 @@ called when a player connects to a server
 */
 BOOL ClientConnect( edict_t *pEntity, const char *pszName, const char *pszAddress, char szRejectReason[ 128 ]  )
 {
+	if(!(pEntity->v.flags & FL_FAKECLIENT)) // Check that client isn't a bot, for future using
+	{
+		// load mapname.cfg
+		char szCommand[128];
+		sprintf(szCommand, "exec mapconfig/%s.cfg\n", STRING(gpGlobals->mapname));
+		CLIENT_COMMAND(pEntity, szCommand);
+	}
+
 	return g_pGameRules->ClientConnected( pEntity, pszName, pszAddress, szRejectReason );
 
 // a client connecting during an intermission can cause problems
@@ -455,6 +463,7 @@ void ClientCommand( edict_t *pEntity )
 	{
 		MESSAGE_BEGIN( MSG_ONE, gmsgPlayMP3, NULL, ENT(pev) );
 			WRITE_STRING( (char *)CMD_ARGV(1) );
+			WRITE_BYTE( atoi(CMD_ARGV(2)) ); // mode
 		MESSAGE_END();
 	}
 	else if ( FStrEq(pcmd, "give" ) )

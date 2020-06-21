@@ -99,9 +99,15 @@ void CCineMonster :: KeyValue( KeyValueData *pkvd )
 		m_fAction = atoi( pkvd->szValue );
 		pkvd->fHandled = TRUE;
 	}	
-	else if (FStrEq(pkvd->szKeyName, "m_flRepeat"))
+	else if (FStrEq(pkvd->szKeyName, "m_iRepeats"))
 	{
-		m_flRepeat = atof( pkvd->szValue );
+		m_iRepeats = atoi( pkvd->szValue );
+		m_iRepeatsLeft = m_iRepeats;
+		pkvd->fHandled = TRUE;
+	}
+	else if (FStrEq(pkvd->szKeyName, "m_fTurnType"))
+	{
+		m_fTurnType = atoi( pkvd->szValue );
 		pkvd->fHandled = TRUE;
 	}
 	else if (FStrEq(pkvd->szKeyName, "m_flRadius"))
@@ -131,7 +137,11 @@ TYPEDESCRIPTION	CCineMonster::m_SaveData[] =
 	DEFINE_FIELD( CCineMonster, m_iszFireOnBegin, FIELD_STRING ),
 	DEFINE_FIELD( CCineMonster, m_fMoveTo, FIELD_INTEGER ),
 	DEFINE_FIELD( CCineMonster, m_fAction, FIELD_INTEGER ),
-	DEFINE_FIELD( CCineMonster, m_flRepeat, FIELD_FLOAT ),
+
+	DEFINE_FIELD( CCineMonster, m_iRepeats, FIELD_INTEGER ),
+	DEFINE_FIELD( CCineMonster, m_iRepeatsLeft, FIELD_INTEGER ),
+	DEFINE_FIELD( CCineMonster, m_fTurnType, FIELD_INTEGER ),
+
 	DEFINE_FIELD( CCineMonster, m_flRadius, FIELD_FLOAT ),
 
 	DEFINE_FIELD( CCineMonster, m_iDelay, FIELD_INTEGER ),
@@ -465,6 +475,7 @@ BOOL CCineMonster :: StartSequence( CBaseMonster *pTarget, int iszSeq, BOOL comp
 void CCineMonster :: SequenceDone ( CBaseMonster *pMonster )
 {
 	//ALERT( at_aiconsole, "Sequence %s finished\n", STRING( m_pCine->m_iszPlay ) );
+	m_iRepeatsLeft = m_iRepeats; //LRC - reset the repeater count
 	m_iState = STATE_OFF; // we've finished.
 	if ( !( pev->spawnflags & SF_SCRIPT_REPEATABLE ) )
 	{

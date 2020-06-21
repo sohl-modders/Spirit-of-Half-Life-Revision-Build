@@ -348,7 +348,8 @@ BOOL CWeaponCycler::Deploy( )
 
 void CWeaponCycler::Holster( int skiplocal /* = 0 */ )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	else m_pPlayer->m_flNextAttack = 0.0;
 }
 
 

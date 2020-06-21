@@ -35,15 +35,12 @@ public:
 
 	void PrimaryAttack( void );
 	void SecondaryAttack( void );
-	int Swing( int fFirst );
 	BOOL Deploy( void );
 	void Holster( );
 	void WeaponIdle( void );
 	BOOL ShouldWeaponIdle( void ) { return TRUE; };
-	int m_iSwing;
-	BOOL bHit;
 private:
-	unsigned int m_usCrowbar;
+	int m_iSwing;
 };
 LINK_ENTITY_TO_CLASS( weapon_crowbar, CCrowbar );
 
@@ -81,8 +78,6 @@ void CCrowbar::Precache( void )
 	PRECACHE_SOUND("weapons/cbar_hitbod2.wav");
 	PRECACHE_SOUND("weapons/cbar_hitbod3.wav");
 	PRECACHE_SOUND("weapons/cbar_miss1.wav");
-
-	m_usCrowbar = PRECACHE_EVENT ( 1, "events/crowbar.sc" );
 }
 
 int CCrowbar::GetItemInfo(ItemInfo *p)
@@ -109,7 +104,9 @@ BOOL CCrowbar::Deploy( )
 
 void CCrowbar::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	SendWeaponAnim( CROWBAR_HOLSTER );
 }
 
@@ -161,23 +158,7 @@ void FindHullIntersection( const Vector &vecSrc, TraceResult &tr, float *mins, f
 
 void CCrowbar::PrimaryAttack()
 {
-	if (!Swing(TRUE)) Swing (FALSE);
-	m_flTimeUpdate = UTIL_WeaponTimeBase() + 0.2;
-}
-
-void CCrowbar::SecondaryAttack()
-{
-	if (!Swing(TRUE)) Swing (FALSE);
-	m_flTimeUpdate = UTIL_WeaponTimeBase() + 0.2;
-}
-
-int CCrowbar::Swing( int fFirst )
-{
-	int fDidHit = FALSE;
-	bHit = FALSE;
 	TraceResult tr;
-
-	if ( m_flTimeUpdate > UTIL_WeaponTimeBase() ) return fDidHit;
 
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3;
           
@@ -187,6 +168,13 @@ int CCrowbar::Swing( int fFirst )
 
 	UTIL_TraceLine( vecSrc, vecEnd, dont_ignore_monsters, ENT( m_pPlayer->pev ), &tr );
 
+	// player "shoot" animation
+	m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
+
+	// always play swing sound
+	EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_WEAPON, "weapons/cbar_miss1.wav", 1, ATTN_NORM, 0, 98 + RANDOM_LONG(0,3)); 
+
+	// find hit point
 	if ( tr.flFraction >= 1.0 )
 	{
 		UTIL_TraceHull( vecSrc, vecEnd, dont_ignore_monsters, head_hull, ENT( m_pPlayer->pev ), &tr );
@@ -201,14 +189,35 @@ int CCrowbar::Swing( int fFirst )
 		}
 	}
 
-	if ( tr.flFraction >= 1.0 && fFirst) m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
+	// play sound/do damage
+	if ( tr.flFraction >= 1.0 )
+	{
+    	// miss
+		switch( ((m_iSwing++) % 2) + 1 )
+		{
+		case 0:
+			SendWeaponAnim( CROWBAR_ATTACK1MISS ); break;
+		case 1:
+			SendWeaponAnim( CROWBAR_ATTACK2MISS ); break;
+		case 2:
+			SendWeaponAnim( CROWBAR_ATTACK3MISS ); break;
+		}
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.5;
+	}
 	else
 	{
-		// player "shoot" animation
-		m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
-		
 		// hit
-		fDidHit = TRUE;
+		switch( ((m_iSwing++) % 2) + 1 )
+		{
+		case 0:
+			SendWeaponAnim( CROWBAR_ATTACK1HIT ); break;
+		case 1:
+			SendWeaponAnim( CROWBAR_ATTACK2HIT ); break;
+		case 2:
+			SendWeaponAnim( CROWBAR_ATTACK3HIT ); break;
+		}
+
+		// hit
 		CBaseEntity *pEntity = CBaseEntity::Instance(tr.pHit);
 
 		ClearMultiDamage( );
@@ -218,28 +227,68 @@ int CCrowbar::Swing( int fFirst )
 		ApplyMultiDamage( m_pPlayer->pev, m_pPlayer->pev );
 
 		// play thwack, smack, or dong sound
-		float flVol = 1.0;
 		int fHitWorld = TRUE;
 
 		if (pEntity)
 		{
 			if ( pEntity->Classify() != CLASS_NONE && pEntity->Classify() != CLASS_MACHINE )
 			{
-				bHit = TRUE;//play hitbody sound on client
+				// play thwack or smack sound
+				switch( RANDOM_LONG(0,2) )
+				{
+				case 0:
+					EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/cbar_hitbod1.wav", 1, ATTN_NORM); break;
+				case 1:
+					EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/cbar_hitbod2.wav", 1, ATTN_NORM); break;
+				case 2:
+					EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/cbar_hitbod3.wav", 1, ATTN_NORM); break;
+				}
+
 				m_pPlayer->m_iWeaponVolume = CROWBAR_BODYHIT_VOLUME;
+
 				if ( !pEntity->IsAlive() )
 					m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-				else flVol = 0.1;
+
 				fHitWorld = FALSE;
 			}
 		}
-		m_pPlayer->m_iWeaponVolume = flVol * CROWBAR_WALLHIT_VOLUME;
-		m_flNextPrimaryAttack =  m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.25;
-		m_flTimeUpdate = UTIL_WeaponTimeBase() + 0.2;	
-	}
 
- 	PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usCrowbar, 0.0, (float *)&g_vecZero, (float *)&g_vecZero, 0, 0, pev->body, fFirst, bHit, 0 );
-	return fDidHit;
+		// play texture hit sound
+		// UNDONE: Calculate the correct point of intersection when we hit with the hull instead of the line
+		if (fHitWorld)
+		{
+			float fvolbar = TEXTURETYPE_PlaySound(&tr, vecSrc, vecSrc + (vecEnd-vecSrc)*2, BULLET_PLAYER_CROWBAR);
+            
+			if ( g_pGameRules->IsMultiplayer() )
+			{
+				// override the volume here, cause we don't play texture sounds in multiplayer, 
+				// and fvolbar is going to be 0 from the above call.
+				fvolbar = 1;
+			}
+			
+			PLAYBACK_EVENT_FULL( FEV_RELIABLE|FEV_GLOBAL, m_pPlayer->edict(), m_usDecals, 0.0, (float *)&tr.vecEndPos, (float *)&g_vecZero, 0.0, 0.0, pEntity->entindex(), 7, 0, 0 );
+
+			// also play crowbar strike
+			switch( RANDOM_LONG(0,1) )
+			{
+			case 0:
+				EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/cbar_hit1.wav", fvolbar, ATTN_NORM, 0, 98 + RANDOM_LONG(0,3)); 
+				break;
+			case 1:
+				EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/cbar_hit2.wav", fvolbar, ATTN_NORM, 0, 98 + RANDOM_LONG(0,3)); 
+				break;
+			}
+			m_pPlayer->m_iWeaponVolume = 0.1 * CROWBAR_WALLHIT_VOLUME;
+		}
+
+		m_flNextPrimaryAttack =  m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.35;
+	}
+	m_flTimeUpdate = UTIL_WeaponTimeBase() + 0.2;
+}
+
+void CCrowbar::SecondaryAttack()
+{
+	PrimaryAttack();
 }
 
 void CCrowbar:: WeaponIdle( void )

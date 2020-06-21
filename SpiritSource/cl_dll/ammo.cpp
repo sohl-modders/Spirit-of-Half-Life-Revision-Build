@@ -301,6 +301,11 @@ int CHudAmmo::Init(void)
 	CVAR_CREATE( "sv_altweapons", "0", FCVAR_ARCHIVE );
 	CVAR_CREATE( "hud_altfont", "0", FCVAR_ARCHIVE );	// scrama: sprite font
 
+	// Ku2zoff
+	CVAR_CREATE( "sv_weaponholster", "1", FCVAR_ARCHIVE );
+	CVAR_CREATE( "sv_flashcharge", "0", FCVAR_ARCHIVE );
+	CVAR_CREATE( "sv_noreload", "0", FCVAR_ARCHIVE );
+
 	m_iFlags |= HUD_ACTIVE; //!!!
 
 	gWR.Init();

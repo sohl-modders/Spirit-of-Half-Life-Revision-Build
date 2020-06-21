@@ -483,12 +483,10 @@ typedef struct
 
 /*
 ==================
-V_CalcRefdef
+V_CalcNormalRefdef
 
 ==================
 */
-extern void RenderFog( void ); //LRC
-
 void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 {
 	cl_entity_t		*ent, *view;
@@ -854,7 +852,6 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	lasttime = pparams->time;
 
 	v_origin = pparams->vieworg;
-	RenderFog();
 	if (gHUD.viewFlags & 1 && gHUD.m_iSkyMode == SKY_OFF) // custom view active (trigger_viewset) //AJH (added skymode check and copied function to above)
 	{
 		cl_entity_t *viewentity;
@@ -1796,9 +1793,13 @@ void V_CalcThirdPersonRefdef( struct ref_params_s * pparams )
 	}
 }
 
+extern void RenderFog( void ); //LRC
+int pause; // Ku2zoff
 
 void DLLEXPORT V_CalcRefdef( struct ref_params_s *pparams )
 {
+	pause = pparams->paused;
+
 	// intermission / finale rendering
 	if ( pparams->intermission )
 	{	
@@ -1816,7 +1817,7 @@ void DLLEXPORT V_CalcRefdef( struct ref_params_s *pparams )
 	{
 		V_CalcNormalRefdef ( pparams );
 	}
-
+	RenderFog();
 }
 
 /*

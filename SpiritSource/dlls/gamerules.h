@@ -17,7 +17,7 @@
 //=========================================================
 
 //LRC
-#define GAME_NAME "SoHL: Revision Build 1.0"
+#define GAME_NAME "SoHL: Revision Build 1.8"
 
 //#include "weapons.h"
 //#include "items.h"

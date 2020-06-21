@@ -10,7 +10,7 @@ int CMP3::Initialize()
 	char fmodlib[256];
 	
 	m_iIsPlaying = 0;
-	sprintf( fmodlib, "%s/cl_dlls/mp3dec.dll", gEngfuncs.pfnGetGameDirectory());
+	sprintf( fmodlib, "%s/cl_dlls/fmod.dll", gEngfuncs.pfnGetGameDirectory());
 	// replace forward slashes with backslashes
 	for( int i=0; i < 256; i++ )
 		if( fmodlib[i] == '/' ) fmodlib[i] = '\\';
@@ -31,8 +31,11 @@ int CMP3::Initialize()
 		(FARPROC&)SO = 		GetProcAddress(m_hFMod, "_FSOUND_Stream_Open@16");//AJH Use new version of fmod
 		(FARPROC&)SPLAY = 	GetProcAddress(m_hFMod, "_FSOUND_Stream_Play@8");
 		(FARPROC&)CLOSE = 	GetProcAddress(m_hFMod, "_FSOUND_Close@0");
+		// Ku2zoff
+		(FARPROC&)SETVOLUME =   GetProcAddress(m_hFMod, "_FSOUND_SetVolume@8");
+		(FARPROC&)PAUSE     =   GetProcAddress(m_hFMod, "_FSOUND_SetPaused@8");
 		
-		if( !(SCL && SOP && SBS && SDRV && INIT && (SOF||SO) && SPLAY && CLOSE) )
+		if( !(SCL && SOP && SBS && SDRV && INIT && (SOF||SO) && SPLAY && CLOSE && SETVOLUME && PAUSE) )
 		{
 			FreeLibrary( m_hFMod );
 			gEngfuncs.Con_Printf("Fatal Error: FMOD functions couldn't be loaded!\n");
@@ -45,7 +48,7 @@ int CMP3::Initialize()
 		gEngfuncs.Con_Printf("Fatal Error: FMOD library couldn't be loaded!\n");
 		return 0;
 	}
-	gEngfuncs.Con_Printf("mp3dec.dll loaded succesfully!\n");
+	gEngfuncs.Con_Printf("fmod.dll loaded succesfully!\n");
 	return 1;
 }
 
@@ -71,7 +74,7 @@ int CMP3::StopMP3( void )
 	return 1;
 }
 
-int CMP3::PlayMP3( const char *pszSong )
+int CMP3::PlayMP3( const char *pszSong, int iLoop )
 {
 	if( m_iIsPlaying )
 	{
@@ -90,14 +93,21 @@ int CMP3::PlayMP3( const char *pszSong )
 
 	sprintf( song, "%s/media/%s", gEngfuncs.pfnGetGameDirectory(), pszSong);
 
+	unsigned int playOpt;
+
+	if(iLoop > 0)
+		playOpt = FSOUND_NORMAL | FSOUND_LOOP_NORMAL;
+	else
+		playOpt = FSOUND_NORMAL; //G-Cont. kill loop sound
+
 	gEngfuncs.Con_Printf("Using fmod.dll version %f\n",VER());
 	if( SOF )
 	{													
-		m_Stream = SOF( song, FSOUND_NORMAL /*| FSOUND_LOOP_NORMAL*/, 1 );//G-Cont. kill loop sound
+		m_Stream = SOF( song, playOpt, 1 );
 	}
 	else if (SO)
 	{
-		m_Stream = SO( song, FSOUND_NORMAL /*| FSOUND_LOOP_NORMAL*/, 0 ,0);//G-Cont. kill loop sound
+		m_Stream = SO( song, playOpt, 0, 0);
 	}
 	if(m_Stream)
 	{
@@ -111,4 +121,25 @@ int CMP3::PlayMP3( const char *pszSong )
 		gEngfuncs.Con_Printf("Error: Could not load %s\n",song);
 		return 0;
 	}
+}
+
+extern int pause;
+
+int CMP3::Volume( void )
+{
+	if ( m_iIsPlaying )
+	{
+		if ( pause )
+        {
+			PAUSE ( 0, 1 ); 
+        }
+		else
+		{
+			PAUSE ( 0, 0 ); 
+		}
+		SETVOLUME( 0, CVAR_GET_FLOAT( "MP3Volume" ) * 200 );
+		return 1;
+	}
+	else
+		return 0; 
 }

@@ -132,9 +132,19 @@ void CHalfLifeMultiplay::RefreshSkillData( void )
 	CGameRules::RefreshSkillData();
 
 // override some values for multiplay.
-
-	// suitcharger
 	gSkillData.suitchargerCapacity = 30;
+	gSkillData.batteryCapacity = 15;
+	gSkillData.healthchargerCapacity = 60;
+	gSkillData.healthkitCapacity = 15;
+
+    gSkillData.flashlightCharge = 0; 
+
+	// player damage adj
+	gSkillData.plrHead = 3;
+	gSkillData.plrChest = 1;
+	gSkillData.plrStomach = 1;
+	gSkillData.plrLeg = 1;
+	gSkillData.plrArm = 1;
 
 	// Crowbar whack
 	gSkillData.plrDmgCrowbar = 25;
@@ -166,6 +176,9 @@ void CHalfLifeMultiplay::RefreshSkillData( void )
 
 	// Hand Grendade
 	gSkillData.plrDmgHandGrenade = 100;
+
+	// Tau-cannon
+	gSkillData.plrDmgGauss = 20;
 
 	// Satchel Charge
 	gSkillData.plrDmgSatchel = 120;
@@ -517,14 +530,18 @@ float CHalfLifeMultiplay :: FlPlayerFallDamage( CBasePlayer *pPlayer )
 {
 	int iFallDamage = (int)falldamage.value;
 
+	pPlayer->m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
+
 	switch ( iFallDamage )
 	{
+	default:
+	case 0://half
+		return pPlayer->m_flFallVelocity * DAMAGE_FOR_FALL_SPEED/2;
+		break;
 	case 1://progressive
-		pPlayer->m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
 		return pPlayer->m_flFallVelocity * DAMAGE_FOR_FALL_SPEED;
 		break;
-	default:
-	case 0:// fixed
+	case 2:// fixed
 		return 10;
 		break;
 	}
@@ -563,6 +580,8 @@ void CHalfLifeMultiplay :: PlayerSpawn( CBasePlayer *pPlayer )
           
 	pPlayer->m_iHideHUD |= ITEM_SUIT;
 	
+	pPlayer->m_iFlashBattery = 100; //Ku2zoff
+
 	addDefault = TRUE;
 
 	while ( pWeaponEntity = UTIL_FindEntityByClassname( pWeaponEntity, "game_player_equip" ))
@@ -692,6 +711,9 @@ void CHalfLifeMultiplay::DeathNotice( CBasePlayer *pVictim, entvars_t *pKiller, 
 	char *tau = "tau_cannon";
 	char *gluon = "gluon gun";
 
+	// Ku2zoff - headshot icon
+	bool HeadShot = ((pVictim->m_LastHitGroup == 1) ? TRUE : FALSE);
+
 	if ( pKiller->flags & FL_CLIENT )
 	{
 		killer_index = ENTINDEX(ENT(pKiller));
@@ -731,6 +753,8 @@ void CHalfLifeMultiplay::DeathNotice( CBasePlayer *pVictim, entvars_t *pKiller, 
 		WRITE_BYTE( killer_index );						// the killer
 		WRITE_BYTE( ENTINDEX(pVictim->edict()) );		// the victim
 		WRITE_STRING( killer_weapon_name );		// what they were killed by (should this be a string?)
+		//Ku2zoff - headshot icon
+		WRITE_BYTE( HeadShot );						// is that was a headshot >:] ?
 	MESSAGE_END();
 
 	// replace the code names with the 'real' names

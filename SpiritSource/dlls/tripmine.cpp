@@ -75,6 +75,7 @@ public:
 	void Precache( void );
 	int GetItemInfo(ItemInfo *p);
 	void PrimaryAttack( void );
+	void SecondaryAttack( void );
 	BOOL Deploy( void );
 	void Holster( );
 	void WeaponIdle( void );
@@ -409,7 +410,11 @@ void CTripmine::Holster( )
 {
 	//don't play holster animation if ammo is out
 	if(m_iBody)m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase();
-	else m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	else 
+	{
+		if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+		else m_pPlayer->m_flNextAttack = 0.0;
+	}
 
 	if (!m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
 	{
@@ -454,9 +459,14 @@ void CTripmine::PrimaryAttack( void )
 		}
 	}
 
-	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.3;
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.4;
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + RANDOM_FLOAT( 10, 15 );
 	m_flTimeUpdate =  UTIL_WeaponTimeBase() + RANDOM_FLOAT( 0.5, 1.0 ); //time to deploy next tripmine
+}
+
+void CTripmine::SecondaryAttack( void )
+{
+	PrimaryAttack( );
 }
 
 void CTripmine::WeaponIdle( void )

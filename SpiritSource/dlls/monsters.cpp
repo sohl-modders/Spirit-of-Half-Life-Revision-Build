@@ -34,6 +34,9 @@
 #include "soundent.h"
 #include "gamerules.h"
 
+//Ku2zoff
+#include "player.h"  //DMSS (Dynamic Monster Step Sound)
+
 #define MONSTER_CUT_CORNER_DIST		8 // 8 means the monster's bounding box is contained without the box of the node in WC
 
 
@@ -2634,6 +2637,85 @@ void CBaseMonster :: SetEyePosition ( void )
 	}
 }
 
+//====================================================================
+// Ku2zoff - Dynamic Monster Stepping Sound. Based on ts2do's tutorial
+//==================================================================== 
+void CBaseMonster::DynamicStepSound( void )
+{ 
+    float fvol;
+    char *rgsz[4];
+    int cnt;
+
+    TraceResult ptr;
+
+    UTIL_TraceLine(pev->origin + Vector(0, 0, 8), pev->origin - Vector(0, 0, 16),dont_ignore_monsters,ENT(pev),&ptr);
+    CBaseEntity *pEntity = CBaseEntity::Instance(ptr.pHit);
+        
+    Vector vecSrc = pev->origin + Vector(0, 0, 8);
+	Vector vecEnd = pev->origin - Vector(0, 0, 16);
+
+	int chTextureType = TEXTURETYPE_Trace( vecSrc, vecEnd, pEntity );
+
+    switch(m_Activity)
+    {
+        case ACT_WALK:
+            fvol=0.25;
+            break;
+        case ACT_RUN:
+            fvol=0.5;
+            break;
+        default:
+            fvol=0.25;
+            break;
+    }
+
+	switch (chTextureType)
+	{
+	default:
+	case CHAR_TEX_CONCRETE: 
+		rgsz[0] = "player/pl_step1.wav";
+		rgsz[1] = "player/pl_step2.wav";
+		cnt = 2;
+		break;
+	case CHAR_TEX_METAL: 
+		rgsz[0] = "player/pl_metal1.wav";
+		rgsz[1] = "player/pl_metal2.wav";
+		cnt = 2;
+		break;
+	case CHAR_TEX_DIRT: 
+		rgsz[0] = "player/pl_dirt1.wav";
+		rgsz[1] = "player/pl_dirt2.wav";
+		rgsz[2] = "player/pl_dirt3.wav";
+		cnt = 3;
+		break;
+	case CHAR_TEX_VENT: 
+		rgsz[0] = "player/pl_duct1.wav";
+		rgsz[1] = "player/pl_duct2.wav";
+		cnt = 2;
+		break;
+	case CHAR_TEX_GRATE: 
+		rgsz[0] = "player/pl_grate1.wav";
+		rgsz[1] = "player/pl_grate4.wav";
+		cnt = 2;
+		break;
+	case CHAR_TEX_TILE: 
+		rgsz[0] = "player/pl_tile1.wav";
+		rgsz[1] = "player/pl_tile3.wav";
+		rgsz[2] = "player/pl_tile2.wav";
+		rgsz[3] = "player/pl_tile4.wav";
+		cnt = 4;
+		break;
+	case CHAR_TEX_SLOSH: 
+		rgsz[0] = "player/pl_slosh1.wav";
+		rgsz[1] = "player/pl_slosh3.wav";
+		rgsz[2] = "player/pl_slosh2.wav";
+		rgsz[3] = "player/pl_slosh4.wav";
+		cnt = 4;
+		break;
+	}
+	EMIT_SOUND( edict(), CHAN_BODY, rgsz[RANDOM_LONG(0,cnt-1)], fvol, ATTN_NORM );
+}
+
 void CBaseMonster :: HandleAnimEvent( MonsterEvent_t *pEvent )
 {
 	switch( pEvent->event )
@@ -2664,7 +2746,15 @@ void CBaseMonster :: HandleAnimEvent( MonsterEvent_t *pEvent )
 
 	case SCRIPT_EVENT_SOUND:			// Play a named wave file
 		if ( !(pev->spawnflags & SF_MONSTER_GAG) || m_MonsterState != MONSTERSTATE_IDLE)
-			EMIT_SOUND( edict(), CHAN_BODY, pEvent->options, 1.0, ATTN_IDLE );
+		{
+			if(FStrEq(pEvent->options,"common/npc_step1.wav") || 
+			   FStrEq(pEvent->options,"common/npc_step2.wav") || 
+			   FStrEq(pEvent->options,"common/npc_step3.wav") || 
+			   FStrEq(pEvent->options,"common/npc_step4.wav"))
+				DynamicStepSound(); // Ku2zoff
+			else 
+				EMIT_SOUND( edict(), CHAN_BODY, pEvent->options, 1.0, ATTN_IDLE );
+		}
 		break;
 
 	case SCRIPT_EVENT_SOUND_VOICE:
@@ -3222,14 +3312,16 @@ BOOL CBaseMonster :: FindLateralCover ( const Vector &vecThreat, const Vector &v
 
 Vector CBaseMonster :: ShootAtEnemy( const Vector &shootOrigin )
 {
-	CBaseEntity *pEnemy = m_hEnemy;
-
-	if ( pEnemy )
+	if (m_pCine != NULL && m_hTargetEnt != NULL && (m_pCine->m_fTurnType == 1))
 	{
-		return ( (pEnemy->BodyTarget( shootOrigin ) - pEnemy->pev->origin) + m_vecEnemyLKP - shootOrigin ).Normalize();
+		Vector vecDest = ( m_hTargetEnt->pev->absmin + m_hTargetEnt->pev->absmax ) / 2;
+		return ( vecDest - shootOrigin ).Normalize();
 	}
-	else
-		return gpGlobals->v_forward;
+	else if ( m_hEnemy )
+	{
+		return ( (m_hEnemy->BodyTarget( shootOrigin ) - m_hEnemy->pev->origin) + m_vecEnemyLKP - shootOrigin ).Normalize();
+	}
+	else return gpGlobals->v_forward;
 }
 
 

@@ -334,7 +334,10 @@ int CRpg::GetItemInfo(ItemInfo *p)
 	p->iMaxAmmo1 = ROCKET_MAX_CARRY;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
-	p->iMaxClip = RPG_MAX_CLIP;
+
+	if(CVAR_GET_FLOAT("sv_noreload")) p->iMaxClip = WEAPON_NOCLIP;
+	else p->iMaxClip = RPG_MAX_CLIP;
+
 	p->iSlot = 3;
 	p->iPosition = 0;
 	p->iId = m_iId = WEAPON_RPG;
@@ -346,50 +349,64 @@ int CRpg::GetItemInfo(ItemInfo *p)
 
 BOOL CRpg::Deploy( )
 {
-//	return DefaultDeploy( "models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW, "rpg" );
-//	scrama: draw rpg faster then glock? suckers
-	return DefaultDeploy( "models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW, "rpg", 1 );
+	return DefaultDeploy( "models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW, "rpg" );
 }
 
 void CRpg::Holster( )
 {
 	ShutdownScreen();//set skin to 0 manually
 	m_fInReload = FALSE;// cancel any reload in progress.
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1;
+
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	SendWeaponAnim( RPG_HOLSTER );
 }
 
 void CRpg::PrimaryAttack()
 {
-	if ( m_iClip )
+	if(CVAR_GET_FLOAT("sv_noreload"))
 	{
-		m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
-		m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
-                    
-		m_iBody = 1; //hide rocket in laubcher
-		SendWeaponAnim( RPG_FIRE);
-		// player "shoot" animation
-		m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
-
-		UTIL_MakeVectors( m_pPlayer->pev->v_angle );
-		Vector vecSrc = m_pPlayer->GetGunPosition( ) + gpGlobals->v_forward * 16 + gpGlobals->v_right * 8 + gpGlobals->v_up * -8;
-		
-		CRpgRocket *pRocket = CRpgRocket::Create ( vecSrc, m_pPlayer->pev->v_angle, m_pPlayer, this );
-		UTIL_MakeVectors( m_pPlayer->pev->v_angle );// RpgRocket::Create stomps on globals, so remake.
-		pRocket->pev->velocity = pRocket->pev->velocity + gpGlobals->v_forward * DotProduct( m_pPlayer->pev->velocity, gpGlobals->v_forward );
-
-		// firing RPG no longer turns on the designator. ALT fire is a toggle switch for the LTD.
-		// Ken signed up for this as a global change (sjb)
-
-		m_iClip--; 
-		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 1.5;
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.5;
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+		{
+			PlayEmptySound();
+			m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.7;//no longer indicate fps :)
+			return;
+		}
+		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
 	}
 	else
 	{
-		PlayEmptySound();
-		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.7;//no longer indicate fps :)
+		if ( m_iClip == 0)
+		{
+			PlayEmptySound();
+			m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.7;//no longer indicate fps :)
+			return;
+		}
+		m_iClip--;
 	}
+
+	m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
+	m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
+                    
+	m_iBody = 1; //hide rocket in laubcher
+	SendWeaponAnim( RPG_FIRE);
+	// player "shoot" animation
+	m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
+
+	UTIL_MakeVectors( m_pPlayer->pev->v_angle );
+	Vector vecSrc = m_pPlayer->GetGunPosition( ) + gpGlobals->v_forward * 16 + gpGlobals->v_right * 8 + gpGlobals->v_up * -8;
+		
+	CRpgRocket *pRocket = CRpgRocket::Create ( vecSrc, m_pPlayer->pev->v_angle, m_pPlayer, this );
+	UTIL_MakeVectors( m_pPlayer->pev->v_angle );// RpgRocket::Create stomps on globals, so remake.
+	pRocket->pev->velocity = pRocket->pev->velocity + gpGlobals->v_forward * DotProduct( m_pPlayer->pev->velocity, gpGlobals->v_forward );
+
+	// firing RPG no longer turns on the designator. ALT fire is a toggle switch for the LTD.
+	// Ken signed up for this as a global change (sjb)
+
+	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 1.5;
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.5;
+
 	UpdateSpot( );
 }
 
@@ -403,6 +420,8 @@ void CRpg::SecondaryAttack()
 
 void CRpg::Reload( void )
 {
+	if(CVAR_GET_FLOAT("sv_noreload")) return;
+
 	if ((m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0) || ( m_iClip == 1 )) return;
 	
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.5;

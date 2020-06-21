@@ -29,6 +29,9 @@
 #include "player.h"
 #include "weapons.h"
 
+#define SF_RECHARGE_SPEC    1
+#define SF_RECHARGE_SKILL    2
+
 class CRecharge : public CBaseToggle
 {
 public:
@@ -95,8 +98,20 @@ void CRecharge::Spawn()
 	UTIL_SetOrigin(this, pev->origin);		// set size and link into world
 	UTIL_SetSize(pev, pev->mins, pev->maxs);
 	SET_MODEL(ENT(pev), STRING(pev->model) );
-	m_iJuice = gSkillData.suitchargerCapacity;
-	pev->frame = 0;			
+
+	if (pev->spawnflags & SF_RECHARGE_SKILL)
+		pev->armorvalue = (int)GetSkillCvar( (char *)STRING(pev->message) );
+
+	if (pev->spawnflags & SF_RECHARGE_SPEC)
+		m_iJuice = max( pev->armorvalue, 0);
+	else
+		m_iJuice = gSkillData.suitchargerCapacity;
+
+	if ( m_iJuice > 0 )
+		pev->frame = 0;
+	else
+		pev->frame = 1;
+			
 	//LRC
 	if (m_iStyle >= 32) LIGHT_STYLE(m_iStyle, "a");
 	else if (m_iStyle <= -32) LIGHT_STYLE(-m_iStyle, "z");
@@ -129,7 +144,7 @@ void CRecharge::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE use
           CBasePlayer *pPlayer = (CBasePlayer *)pActivator;
 	
 	// if the player doesn't have the suit, or there is no juice left, make the deny noise
-	if ((m_iJuice <= 0) || (!(pPlayer->m_iHideHUD & ITEM_SUIT)))
+	if ((m_iJuice <= 0) || (!(pPlayer->m_iHideHUD & ITEM_SUIT)) || (pActivator->pev->armorvalue == MAX_NORMAL_BATTERY))
 	{
 		if (m_flSoundTime <= gpGlobals->time)
 		{
@@ -229,3 +244,86 @@ STATE CRecharge::GetState( void )
 	else
 		return STATE_OFF;
 }
+
+//=============================================
+//
+// Recharger Control Entity by Maxwel
+//
+//============================================= 
+#define SF_RECHARGE_CONTROL_ONCE    1
+#define SF_RECHARGE_CONTROL_AWARD    2
+#define SF_RECHARGE_CONTROL_SKILL    4
+#define SF_RECHARGE_CONTROL_NSND    8
+
+class CRechargeControl : public CPointEntity
+{
+public:
+    void Spawn( void );
+    void Precache( void );
+    void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
+private:
+    int m_iPrevJuice;
+};
+LINK_ENTITY_TO_CLASS( trigger_recharge_control, CRechargeControl );
+
+void CRechargeControl::Precache( void )
+{
+    PRECACHE_SOUND("items/suitchargeno1.wav");
+    PRECACHE_SOUND("items/suitchargeok1.wav");
+}
+
+void CRechargeControl::Spawn(void)
+{
+    Precache();
+    pev->solid = SOLID_NOT;
+    pev->movetype = MOVETYPE_NONE;
+    
+    if (pev->spawnflags & SF_RECHARGE_CONTROL_SKILL)
+    {
+        pev->armorvalue = (int)GetSkillCvar( (char *)STRING(pev->message) );
+    }
+}
+
+void CRechargeControl::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
+{
+    CRecharge *pRecharge = NULL;
+    pRecharge = (CRecharge *)UTIL_FindEntityByTargetname( NULL, STRING(pev->target) );
+    
+    if (pRecharge)
+    {
+        m_iPrevJuice = pRecharge->m_iJuice;
+        
+        if (pev->spawnflags & SF_RECHARGE_CONTROL_AWARD)
+        {
+            pRecharge->m_iJuice += (int)pev->armorvalue;
+        }
+        else
+            pRecharge->m_iJuice = (int)pev->armorvalue;
+        
+        if (pRecharge->m_iJuice > 0)
+        {
+            pRecharge->pev->frame = 0;
+        }
+        else
+            pRecharge->pev->frame = 1;
+        
+        if (!(pev->spawnflags & SF_RECHARGE_CONTROL_NSND))
+        {
+            if ( (m_iPrevJuice <= 0) && (pRecharge->m_iJuice > 0) )
+            {
+                EMIT_SOUND_DYN( ENT(pRecharge->pev), CHAN_STATIC, "items/suitchargeok1.wav", 1, ATTN_NORM, 0, 150 );
+            }
+            if ( (m_iPrevJuice > 0) && (pRecharge->m_iJuice <= 0) )
+            {
+                EMIT_SOUND_DYN( ENT(pRecharge->pev), CHAN_STATIC, "items/suitchargeno1.wav", 1, ATTN_NORM, 0, 150 );
+            }
+        }
+    }
+    
+    if (pev->spawnflags & SF_RECHARGE_CONTROL_ONCE)
+    {
+        UTIL_Remove( this );
+    }
+}
+
+

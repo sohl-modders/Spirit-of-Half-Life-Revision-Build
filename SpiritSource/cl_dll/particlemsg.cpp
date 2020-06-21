@@ -41,7 +41,7 @@ int CHudParticle::VidInit(void)
 int CHudParticle:: MsgFunc_Particle(const char *pszName,  int iSize, void *pbuf )
 {
 	BEGIN_READ( pbuf, iSize );
-	int entindex = READ_BYTE();
+	int entindex = READ_SHORT();
 	char *sz = READ_STRING();
 
 	ParticleSystem *pSystem = new ParticleSystem(entindex, sz);

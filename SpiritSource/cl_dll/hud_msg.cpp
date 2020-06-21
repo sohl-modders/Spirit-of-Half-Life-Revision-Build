@@ -231,7 +231,10 @@ int CHud :: MsgFunc_PlayMP3( const char *pszName, int iSize, void *pbuf ) //AJH 
 {
 	BEGIN_READ( pbuf, iSize );
 
-	gMP3.PlayMP3( READ_STRING() );
+	const char *pszSong = READ_STRING();
+	int iLoop = READ_BYTE();
+
+	gMP3.PlayMP3( pszSong, iLoop );
 
 	return 1;
 }

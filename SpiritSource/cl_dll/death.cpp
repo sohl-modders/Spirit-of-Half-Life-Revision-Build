@@ -36,6 +36,7 @@ struct DeathNoticeItem {
 	float flDisplayTime;
 	float *KillerColor;
 	float *VictimColor;
+	bool Headshot;	// Ku2zoff
 };
 
 #define MAX_DEATHNOTICES	4
@@ -118,7 +119,17 @@ int CHudDeathNotice :: Draw( float flTime )
 			y = YRES(DEATHNOTICE_TOP) + 2 + (20 * i);  //!!!
 
 			int id = (rgDeathNoticeList[i].iId == -1) ? m_HUD_d_skull : rgDeathNoticeList[i].iId;
-			x = ScreenWidth - ConsoleStringLen(rgDeathNoticeList[i].szVictim) - (gHUD.GetSpriteRect(id).right - gHUD.GetSpriteRect(id).left);
+
+			// Ku2zoff - headshot icon start
+			int headshot_id = gHUD.GetSpriteIndex( "d_headshot" );
+			if(rgDeathNoticeList[i].Headshot)
+			{
+				x = ScreenWidth - ConsoleStringLen(rgDeathNoticeList[i].szVictim) - 
+					(gHUD.GetSpriteRect(id).right - gHUD.GetSpriteRect(id).left) -
+					(gHUD.GetSpriteRect(headshot_id).right - gHUD.GetSpriteRect(headshot_id).left);
+			}
+			else // Ku2zoff - headshot icon end
+				x = ScreenWidth - ConsoleStringLen(rgDeathNoticeList[i].szVictim) - (gHUD.GetSpriteRect(id).right - gHUD.GetSpriteRect(id).left);
 
 			if ( !rgDeathNoticeList[i].iSuicide )
 			{
@@ -141,6 +152,16 @@ int CHudDeathNotice :: Draw( float flTime )
 			SPR_DrawAdditive( 0, x, y, &gHUD.GetSpriteRect(id) );
 
 			x += (gHUD.GetSpriteRect(id).right - gHUD.GetSpriteRect(id).left);
+
+			// Ku2zoff - headshot icon start
+			if(rgDeathNoticeList[i].Headshot)
+			{
+				// Draw headshot icon
+				SPR_Set( gHUD.GetSprite(headshot_id), r, g, b );
+				SPR_DrawAdditive( 0, x, y, &gHUD.GetSpriteRect(headshot_id) );
+				x += (gHUD.GetSpriteRect(headshot_id).right - gHUD.GetSpriteRect(headshot_id).left);
+			}
+			// Ku2zoff - headshot icon end
 
 			// Draw victims name (if it was a player that was killed)
 			if (rgDeathNoticeList[i].iNonPlayerKill == FALSE)
@@ -168,6 +189,8 @@ int CHudDeathNotice :: MsgFunc_DeathMsg( const char *pszName, int iSize, void *p
 	char killedwith[32];
 	strcpy( killedwith, "d_" );
 	strncat( killedwith, READ_STRING(), 32 );
+
+	int headshot = READ_BYTE(); // Ku2zof
 
 	if (gViewPort)
 		gViewPort->DeathMsg( killer, victim );
@@ -244,6 +267,10 @@ int CHudDeathNotice :: MsgFunc_DeathMsg( const char *pszName, int iSize, void *p
 	DEATHNOTICE_DISPLAY_TIME = CVAR_GET_FLOAT( "hud_deathnotice_time" );
 	rgDeathNoticeList[i].flDisplayTime = gHUD.m_flTime + DEATHNOTICE_DISPLAY_TIME;
 
+	// Ku2zoff - headshot icon
+	if(headshot > 0) rgDeathNoticeList[i].Headshot = true;
+	else rgDeathNoticeList[i].Headshot = false;
+
 	if (rgDeathNoticeList[i].iNonPlayerKill)
 	{
 		ConsolePrint( rgDeathNoticeList[i].szKiller );
@@ -272,17 +299,25 @@ int CHudDeathNotice :: MsgFunc_DeathMsg( const char *pszName, int iSize, void *p
 			ConsolePrint( rgDeathNoticeList[i].szKiller );
 			ConsolePrint( " killed his teammate " );
 			ConsolePrint( rgDeathNoticeList[i].szVictim );
+			// Ku2zoff - headshot icon
+			if (rgDeathNoticeList[i].Headshot) ConsolePrint( " with headshot" ); 
 		}
 		else
 		{
 			ConsolePrint( rgDeathNoticeList[i].szKiller );
 			ConsolePrint( " killed " );
 			ConsolePrint( rgDeathNoticeList[i].szVictim );
+			// Ku2zoff - headshot icon
+			if (rgDeathNoticeList[i].Headshot) ConsolePrint( " with headshot" ); 
 		}
 
 		if ( killedwith && *killedwith && (*killedwith > 13 ) && strcmp( killedwith, "d_world" ) && !rgDeathNoticeList[i].iTeamKill )
 		{
-			ConsolePrint( " with " );
+			// Ku2zoff - headshot icon
+			if (rgDeathNoticeList[i].Headshot) 
+				ConsolePrint( " from " ); 
+			else
+				ConsolePrint( " with " );
 
 			// replace the code names with the 'real' names
 			if ( !strcmp( killedwith+2, "egon" ) )

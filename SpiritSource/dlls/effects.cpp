@@ -1348,12 +1348,6 @@ void CLaser::FireAtPoint( Vector startpos, TraceResult &tr )
 
 	BeamDamage( &tr );
 	DoSparks( startpos, tr.vecEndPos );
-	SetEndPos( tr.vecEndPos );
-	if ( m_pStartSprite )
-		UTIL_SetOrigin( m_pStartSprite, tr.vecEndPos );
-
-	BeamDamage( &tr );
-	DoSparks( GetStartPos(), tr.vecEndPos );
 }
 
 void CLaser::StrikeThink( void )
@@ -4571,99 +4565,73 @@ LINK_ENTITY_TO_CLASS( env_sky, CPointEntity );
 //=========================================================
 // LRC - env_particle, uses the aurora particle system
 //=========================================================
-//extern int gmsgParticle = 0;
-#define SF_PARTICLE_ON 1
-#define SF_PARTICLE_SPAWNUSE 2	//AJH for spawnable env_particles
+#define SF_START_ON 1
 
-class CParticle : public CPointEntity
+class CBaseParticle : public CPointEntity
 {
 public:
 	void Spawn( void );
-	void Activate( void );
-	void Precache( void );
-	void DesiredAction( void );
-	void EXPORT Think( void );
-
+	void Precache( void ){ pev->netname = UTIL_PrecacheAurora(pev->message); }
+	void KeyValue( KeyValueData *pkvd );
 	void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
+	void Switch( CBaseEntity *pActivator );
 };
 
-LINK_ENTITY_TO_CLASS( env_particle, CParticle );
-
-void CParticle::Spawn( void )
+void CBaseParticle :: KeyValue( KeyValueData *pkvd )
 {
-	pev->solid		= SOLID_NOT;
+	if (FStrEq(pkvd->szKeyName, "aurora"))
+	{
+		pev->message = ALLOC_STRING( pkvd->szValue );
+		pkvd->fHandled = TRUE;
+	}
+	else	CPointEntity::KeyValue( pkvd );
+}
 
-	pev->movetype		= MOVETYPE_NOCLIP;
+void CBaseParticle::Switch( CBaseEntity *pActivator )
+{
+	if( pev->target )
+	{
+		CBaseEntity *pTarget = UTIL_FindEntityByTargetname(NULL, STRING(pev->target), pActivator);
+		while (pTarget)
+		{
+			UTIL_SetAurora( pTarget, pev->netname);
+			pTarget = UTIL_FindEntityByTargetname(pTarget, STRING(pev->target), pActivator);
+		}
+	}
+	else
+	{
+		UTIL_SetAurora( this, pev->netname);
+	}
+}
 
-	pev->renderfx       	= kRenderFxEntInPVS;
-	pev->renderamt		= 128;
-	pev->rendermode		= kRenderTransTexture;
-
-	// 'body' determines whether the effect is active or not
-	pev->body		= (pev->spawnflags & SF_PARTICLE_ON) != 0;
-
+void CBaseParticle::Spawn( void )
+{
 	Precache();
-
-	UTIL_SetOrigin(this, pev->origin);
 	SET_MODEL(edict(), "sprites/null.spr");
+	UTIL_SetOrigin(this, pev->origin);
+	pev->solid = SOLID_NOT;
+	if(pev->spawnflags & SF_START_ON ) pev->body = TRUE;
 }
 
-
-void CParticle::Precache( void )
+void CBaseParticle::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
 {
-	PRECACHE_MODEL("sprites/null.spr");
-}
-
-void CParticle::Activate( void )
-{
-	CPointEntity::Activate();
-	UTIL_DesiredAction(this);
-}
-
-void CParticle::DesiredAction( void )
-{
-	pev->nextthink = gpGlobals->time + 1;
-}
-
-void CParticle::Think( void )
-{
-	MESSAGE_BEGIN( MSG_ALL, gmsgParticle );
-		WRITE_BYTE( entindex() );
-		WRITE_STRING( STRING(pev->message) );
-	MESSAGE_END();
-}
-
-void CParticle::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
-{
-	if (pev->spawnflags & SF_PARTICLE_SPAWNUSE)//AJH Spawnable env_particles!!
+	if (useType == USE_TOGGLE)
 	{
-		// Create a new entity with Cparticle private data
-		CParticle *pParticle = GetClassPtr( (CParticle *)NULL );
-		pParticle->pev->classname = MAKE_STRING("particle");
-
-		if (pev->netname!=NULL)
-		{
-			pParticle->pev->targetname=pev->netname;	// set childrens name (targetname) from netname
-		}
-
-		pParticle->pev->message = pev->message;
-		pParticle->pev->origin=pActivator->pev->origin;
-		pParticle->pev->angles=pActivator->pev->angles;
-		pParticle->Spawn();
-		pParticle->pev->body=1;							//turn children on automatically
-		pParticle->Think();
-
-	//	ALERT(at_debug,"Particle %s spawned new particle %s\n",STRING(pev->targetname),STRING(pParticle->pev->targetname));
+		if(pev->body) useType = USE_OFF;
+		else useType = USE_ON;
 	}
-	else	//AJH Standard non spawnuse USE function
+	if (useType == USE_ON)
 	{
-		if ( ShouldToggle( useType, pev->body ) )
-		{
-			pev->body = !pev->body;
-			//ALERT(at_console, "Toggling Particle on/off %d\n", pev->body);
-		}
+		pev->body = TRUE;
+		Switch(pActivator);
+	}
+	else if (useType == USE_OFF)
+	{
+		pev->body = FALSE;
+		Switch(pActivator);
 	}
 }
+LINK_ENTITY_TO_CLASS( env_particle, CBaseParticle );
 
 //=========================================================
 // G-Cont - env_mirror, mirroring models and decals

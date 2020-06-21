@@ -66,6 +66,8 @@ void CGrenade::Explode( TraceResult *pTrace, int bitsDamageType )
 	int iContents = UTIL_PointContents ( pev->origin );
 	PLAYBACK_EVENT_FULL( FEV_RELIABLE|FEV_GLOBAL, edict(), m_usEfx, 0.0, (float *)&pev->origin, (float *)&g_vecZero, pev->dmg, 0.0, 0, 0, iContents != CONTENTS_WATER ? 0 : 1, 0 );
 
+	UTIL_ScreenShake( pev->origin, pev->dmg / 8, 2.8, pev->dmg/75, pev->dmg*3 );
+
 /*	MESSAGE_BEGIN( MSG_PAS, SVC_TEMPENTITY, pev->origin );
 		WRITE_BYTE( TE_EXPLOSION );		// This makes a dynamic light and the explosion sprites/sound
 		WRITE_COORD( pev->origin.x );	// Send to PAS because of the sound
@@ -434,7 +436,7 @@ CGrenade * CGrenade:: ShootTimed( entvars_t *pevOwner, Vector vecStart, Vector v
 	pGrenade->pev->friction = 0.8;
 
 	SET_MODEL(ENT(pGrenade->pev), "models/w_grenade.mdl");
-	pGrenade->pev->dmg = 100;
+	pGrenade->pev->dmg = gSkillData.plrDmgHandGrenade;
 
 	return pGrenade;
 }
@@ -452,7 +454,7 @@ CGrenade * CGrenade :: ShootSatchelCharge( entvars_t *pevOwner, Vector vecStart,
 
 	UTIL_SetSize(pGrenade->pev, Vector( 0, 0, 0), Vector(0, 0, 0));
 
-	pGrenade->pev->dmg = 200;
+	pGrenade->pev->dmg = gSkillData.plrDmgSatchel;
 	UTIL_SetOrigin( pGrenade, vecStart );
 	pGrenade->pev->velocity = vecVelocity;
 	pGrenade->pev->angles = g_vecZero;

@@ -46,11 +46,11 @@ public:
 	void WeaponIdle( void );
 	void UpdateSpot( void );
 	float m_flSoundDelay;
+	float m_flSpotDelay;
 	BOOL ShouldWeaponIdle( void ) { return TRUE; };
 	CLaserSpot *m_pSpot;
 private:
 	unsigned short m_usFirePython;
-	int m_fSpotActive;//LTD allow only in multiplayer - no need save\restore
 	int m_iShell;
 };
 
@@ -64,7 +64,8 @@ int CPython::GetItemInfo(ItemInfo *p)
 	p->iMaxAmmo1 = _357_MAX_CARRY;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
-	p->iMaxClip = PYTHON_MAX_CLIP;
+	if(CVAR_GET_FLOAT("sv_noreload")) 	p->iMaxClip = WEAPON_NOCLIP;
+	else p->iMaxClip = PYTHON_MAX_CLIP;
 	p->iFlags = 0;
 	p->iSlot = 1;
 	p->iPosition = 1;
@@ -100,8 +101,6 @@ void CPython::Precache( void )
 BOOL CPython::Deploy( )
 {
 	if ( IsMultiplayer() ) m_iBody = 1;//enable laser sight geometry
-//	return DefaultDeploy( "models/v_357.mdl", "models/p_357.mdl", PYTHON_DRAW, "python", 0.7 );
-//	scrama
 	return DefaultDeploy( "models/v_357.mdl", "models/p_357.mdl", PYTHON_DRAW, "python");
 }
 
@@ -109,14 +108,17 @@ BOOL CPython::Deploy( )
 void CPython::Holster( )
 {
 	m_fInReload = FALSE;// cancel any reload in progress.
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	else m_pPlayer->m_flNextAttack = 0.0;
 
 	SendWeaponAnim( PYTHON_HOLSTER );
 
 	if (m_pSpot)
 	{
 		m_pSpot->Killed( NULL, GIB_NEVER );
-		m_pSpot = NULL;
+		m_pSpot = NULL;	
+		m_pPlayer->pev->fov = m_pPlayer->m_iFOV = 0;  // 0 means reset to default fov
 	}
 }
 
@@ -124,29 +126,60 @@ void CPython::SecondaryAttack( void )
 {
 	if ( IsMultiplayer() )
 	{
-		m_fSpotActive = !m_fSpotActive;
+		if (!m_pSpot)
+		{
+			EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/spot_on.wav", 1, ATTN_NORM);
+			m_pSpot = CLaserSpot::CreateSpot();
 
-		if (!m_fSpotActive && m_pSpot)
+			m_pPlayer->pev->fov = m_pPlayer->m_iFOV = 40;
+		}
+		else
 		{
 			EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/spot_off.wav", 1, ATTN_NORM);
 			m_pSpot->Killed( NULL, GIB_NORMAL );
 			m_pSpot = NULL;
-		}
 
+			// Ku2zoff - old kind zoom =)
+			m_pPlayer->pev->fov = m_pPlayer->m_iFOV = 0;  // 0 means reset to default fov
+		}		 
+		m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.3;
 	}
-	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.3;
+	else
+	{
+		PrimaryAttack();
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 1.0;
+	}
 }
 
 void CPython::PrimaryAttack()
 {
-	if ( m_iClip && m_pPlayer->pev->waterlevel != 3)//don't fire underwater
+	if (m_pPlayer->pev->waterlevel != 3)//don't fire underwater
 	{
-		if ( m_pSpot && m_fSpotActive )	m_pSpot->Suspend( 1.0 );
+		if ( CVAR_GET_FLOAT("sv_noreload") )
+		{
+			if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+			{
+				PlayEmptySound( );
+				m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.5;
+				return;
+			}
+			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		}
+		else
+		{
+			if(m_iClip == 0)
+			{
+				PlayEmptySound( );
+				m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.5;
+				return;
+			}
+			m_iClip--;
+		}
+
+		if ( m_pSpot )	m_pSpot->Suspend( 1.0 );
 
 		m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
 		m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
-
-		m_iClip--;
 
 		// player "shoot" animation
 		m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
@@ -161,39 +194,40 @@ void CPython::PrimaryAttack()
 
 		PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFirePython, 0.0, (float *)&g_vecZero, (float *)&g_vecZero, vecDir.x, vecDir.y, pev->body, 0, 0, 0 );
 
-		m_flNextPrimaryAttack = gpGlobals->time + 1.0;
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = gpGlobals->time + 1.0;
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + RANDOM_FLOAT ( 10, 15 );
 	}
 	else
 	{
 		PlayEmptySound();
-		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.7;
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.7;
 	}
 }
 
 
 void CPython::Reload( void )
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0) return;
-	if ( m_pSpot && m_fSpotActive ) m_pSpot->Suspend( 2.0 );
+	if(CVAR_GET_FLOAT("sv_noreload")) return;
 
-	if (DefaultReload( 6, PYTHON_RELOAD, 2.0 ))
+	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0) return;
+	if ( m_pSpot ) 
+	{
+		m_pSpot->Suspend( 3.0 );
+		m_pPlayer->pev->fov = m_pPlayer->m_iFOV = 0;  // 0 means reset to default fov
+	}
+
+	if (DefaultReload( 6, PYTHON_RELOAD, 3.0 ))
 	{
 		m_flSoundDelay = gpGlobals->time + 1.5;
+		m_flSpotDelay = gpGlobals->time + 3;
 	}
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + RANDOM_FLOAT ( 10, 15 );
 }
 
 void CPython::UpdateSpot( void )
 {
-	if (m_fSpotActive)
+	if (m_pSpot)
 	{
-		if (!m_pSpot)
-		{
-			m_pSpot = CLaserSpot::CreateSpot();
-			EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_ITEM, "weapons/spot_on.wav", 1, ATTN_NORM);
-		}
-
 		UTIL_MakeVectors( m_pPlayer->pev->v_angle );
 		Vector vecSrc = m_pPlayer->GetGunPosition( );;
 		Vector vecAiming = gpGlobals->v_forward;
@@ -202,7 +236,7 @@ void CPython::UpdateSpot( void )
 		UTIL_TraceLine ( vecSrc, vecSrc + vecAiming * 8192, dont_ignore_monsters, ignore_glass, ENT(m_pPlayer->pev), &tr );
 		float flLength = (tr.vecEndPos - vecSrc).Length();
 
-		m_pSpot->pev->scale = flLength / 340;
+		m_pSpot->pev->scale = 0.2;
 		int m_iSpotBright = (1 / log(flLength / 0.3))*1700;
 		if (m_iSpotBright > 255 ) m_iSpotBright = 255;
 
@@ -213,13 +247,13 @@ void CPython::UpdateSpot( void )
 		m_pSpot->pev->renderamt = m_iSpotBright;	
 
 		UTIL_SetOrigin( m_pSpot, tr.vecEndPos + tr.vecPlaneNormal * 0.1);
-
+/*
 		//allow oriented LTD in multiplayer only, but python has LTD only in multiplayer - remove check
 		Vector n = tr.vecPlaneNormal;
 		n.x *= -1;
 		n.y *= -1;
 		m_pSpot->pev->angles = UTIL_VecToAngles(n);
-
+*/
 	}
 }
 
@@ -236,6 +270,12 @@ void CPython::WeaponIdle( void )
 		{
 			EjectBrass ( m_pPlayer->pev->origin, Vector( RANDOM_FLOAT( -10.0, 10.0 ), RANDOM_FLOAT( -10.0, 10.0 ), (float)0.0 ), m_pPlayer->pev->angles.y, m_iShell, TE_BOUNCE_SHELL); 
 		}
+	}
+
+	if (m_flSpotDelay != 0 && m_flSpotDelay <= gpGlobals->time)
+	{
+		m_flSpotDelay = 0;
+		if ( m_pSpot )	m_pPlayer->pev->fov = m_pPlayer->m_iFOV = 40;  // 0 means reset to default fov
 	}
 
 	m_pPlayer->GetAutoaimVector( AUTOAIM_10DEGREES );
@@ -264,7 +304,7 @@ void CPython::WeaponIdle( void )
 		}
 		else
 		{
-			if(!m_fSpotActive) 
+			if(!m_pSpot) 
 			{
 				iAnim = PYTHON_FIDGET;
 				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + (170.0/30.0);

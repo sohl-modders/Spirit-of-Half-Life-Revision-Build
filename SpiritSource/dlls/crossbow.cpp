@@ -278,7 +278,10 @@ int CCrossbow::GetItemInfo(ItemInfo *p)
 	p->iMaxAmmo1 = BOLT_MAX_CARRY;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
-	p->iMaxClip = CROSSBOW_MAX_CLIP;
+
+	if ( CVAR_GET_FLOAT("sv_noreload") ) p->iMaxClip = WEAPON_NOCLIP;
+	else p->iMaxClip = CROSSBOW_MAX_CLIP;
+
 	p->iSlot = 2;
 	p->iPosition = 2;
 	p->iId = WEAPON_CROSSBOW;
@@ -291,14 +294,17 @@ int CCrossbow::GetItemInfo(ItemInfo *p)
 BOOL CCrossbow::Deploy( )
 {
 	if (m_iClip)
-		return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW1, "bow", 0.8 );
-	return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW2, "bow", 0.8 );
+		return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW1, "bow" );
+	return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW2, "bow" );
 }
 
 void CCrossbow::Holster( )
 {
 	m_fInReload = FALSE;// cancel any reload in progress.
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.8;
+
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	ZoomReset();
 
 	if (m_iClip) SendWeaponAnim( CROSSBOW_HOLSTER1 );
@@ -321,26 +327,48 @@ void CCrossbow::FireSniperBolt()
 {
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.75;
 
-	if (m_iClip == 0)
+	if ( CVAR_GET_FLOAT("sv_noreload") )
 	{
-		PlayEmptySound( );
-		return;
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+		{
+			PlayEmptySound( );
+			return;
+		}
+		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	}
+	else
+	{
+		if(m_iClip == 0)
+		{
+			PlayEmptySound( );
+			return;
+		}
+		m_iClip--;
 	}
 
 	TraceResult tr;
 
 	m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
-	m_iClip--;
 
 	// make twang sound
 	EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_WEAPON, "weapons/xbow_fire1.wav", RANDOM_FLOAT(0.95, 1.0), ATTN_NORM, 0, 93 + RANDOM_LONG(0,0xF));
 
-	if (m_iClip) 
+	if ( CVAR_GET_FLOAT("sv_noreload") )
 	{
-		SendWeaponAnim( CROSSBOW_FIRE );
-		m_iBody++;
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]) 
+			SendWeaponAnim( CROSSBOW_FIRE );
+		else 
+			SendWeaponAnim( CROSSBOW_FIRE_LAST );
 	}
-	else SendWeaponAnim( CROSSBOW_FIRE_LAST );
+	else
+	{
+		if (m_iClip) 
+		{
+			SendWeaponAnim( CROSSBOW_FIRE );
+			m_iBody++;
+		}
+		else SendWeaponAnim( CROSSBOW_FIRE_LAST );
+	}
 
 	// player "shoot" animation
 	m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
@@ -395,27 +423,48 @@ void CCrossbow::FireSniperBolt()
 
 void CCrossbow::FireBolt()
 {
-	TraceResult tr;
-
-	if (m_iClip == 0)
+	if ( CVAR_GET_FLOAT("sv_noreload") )
 	{
-		PlayEmptySound( );
-		return;
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+		{
+			PlayEmptySound( );
+			return;
+		}
+		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	}
+	else
+	{
+		if(m_iClip == 0)
+		{
+			PlayEmptySound( );
+			return;
+		}
+		m_iClip--;
 	}
 
-	m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
+	TraceResult tr;
 
-	m_iClip--;
+	m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
 
 	// make twang sound
 	EMIT_SOUND_DYN(ENT(m_pPlayer->pev), CHAN_WEAPON, "weapons/xbow_fire1.wav", RANDOM_FLOAT(0.95, 1.0), ATTN_NORM, 0, 93 + RANDOM_LONG(0,0xF));
 
-	if (m_iClip) 
+	if ( CVAR_GET_FLOAT("sv_noreload") )
 	{
-		SendWeaponAnim( CROSSBOW_FIRE );
-		m_iBody++;
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
+			SendWeaponAnim( CROSSBOW_FIRE );
+		else 
+			SendWeaponAnim( CROSSBOW_FIRE_LAST );
 	}
-	else SendWeaponAnim( CROSSBOW_FIRE_LAST );
+	else
+	{
+		if (m_iClip) 
+		{
+			SendWeaponAnim( CROSSBOW_FIRE );
+			m_iBody++;
+		}
+		else SendWeaponAnim( CROSSBOW_FIRE_LAST );
+	}
 
 	// player "shoot" animation
 	m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
@@ -449,14 +498,14 @@ void CCrossbow::FireBolt()
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.75;
 
-	if (m_iClip != 0)
-		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 5.0;
-	else	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.75;
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 5.0;
 }
 
 
 void CCrossbow::Reload( void )
 {
+	if ( CVAR_GET_FLOAT("sv_noreload") ) return;
+
 	if (m_iClip) return;
 	if ( m_iChargeLevel ) ZoomReset();
 	m_iBody = 0;//show full

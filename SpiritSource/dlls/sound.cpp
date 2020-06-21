@@ -1796,53 +1796,35 @@ char TEXTURETYPE_Find(char *name)
 	return CHAR_TEX_CONCRETE;
 }
 
-// play a strike sound based on the texture that was hit by the attack traceline.  VecSrc/VecEnd are the
-// original traceline endpoints used by the attacker, iBulletType is the type of bullet that hit the texture.
-// returns volume of strike instrument (crowbar) to play
-//   (this is not used for footsteps, only attack sound effects. --LRC)
-
-float TEXTURETYPE_PlaySound(TraceResult *ptr,  Vector vecSrc, Vector vecEnd, int iBulletType)
+//========================================================================
+// Make the code more clear by moving texture tracing here - Ku2zoff
+//========================================================================
+int TEXTURETYPE_Trace( Vector vecSrc, Vector vecEnd, CBaseEntity *pEntity )
 {
-// hit the world, try to play sound based on texture material type
-	
 	char chTextureType;
-	float fvol;
-	float fvolbar;
-	char szbuffer[64];
 	const char *pTextureName;
 	float rgfl1[3];
 	float rgfl2[3];
-	char *rgsz[4];
-	int cnt;
-	float fattn = ATTN_NORM;
+	char szbuffer[64];
 
-	if ( !g_pGameRules->PlayTextureSounds() )
-		return 0.0;
-
-	CBaseEntity *pEntity = CBaseEntity::Instance(ptr->pHit);
-
-	chTextureType = 0;
+	vecSrc.CopyToArray(rgfl1);
+	vecEnd.CopyToArray(rgfl2);
+    chTextureType = 0;
 
 	if (pEntity && pEntity->Classify() != CLASS_NONE && pEntity->Classify() != CLASS_MACHINE)
-		// hit body
+	{	// hit body
 		chTextureType = CHAR_TEX_FLESH;
-	else
+	}
+	else if (pEntity && pEntity->Classify() == CLASS_MACHINE)
 	{
-		// hit world
+		chTextureType = CHAR_TEX_METAL;
+	}
 
-		// find texture under strike, get material type
+    if(pEntity)
+        pTextureName = TRACE_TEXTURE( ENT(pEntity->pev), rgfl1, rgfl2 );
+    else
+        pTextureName = TRACE_TEXTURE( ENT(0), rgfl1, rgfl2 );
 
-		// copy trace vector into array for trace_texture
-
-		vecSrc.CopyToArray(rgfl1);
-		vecEnd.CopyToArray(rgfl2);
-
-		// get texture from entity or world (world is ent(0))
-		if (pEntity)
-			pTextureName = TRACE_TEXTURE( ENT(pEntity->pev), rgfl1, rgfl2 );
-		else
-			pTextureName = TRACE_TEXTURE( ENT(0), rgfl1, rgfl2 );
-			
 		if ( pTextureName )
 		{
 			// strip leading '-0' or '+0~' or '{' or '!'
@@ -1855,12 +1837,34 @@ float TEXTURETYPE_PlaySound(TraceResult *ptr,  Vector vecSrc, Vector vecEnd, int
 			strcpy(szbuffer, pTextureName);
 			szbuffer[CBTEXTURENAMEMAX - 1] = 0;
 				
-			// ALERT ( at_console, "texture hit: %s\n", szbuffer);
+			//ALERT ( at_console, "texture hit: %s\n", szbuffer);
 
-			// get texture type
-			chTextureType = TEXTURETYPE_Find(szbuffer);	
+			chTextureType = TEXTURETYPE_Find( szbuffer ); 
 		}
-	}
+
+     return chTextureType;
+}
+
+// play a strike sound based on the texture that was hit by the attack traceline.  VecSrc/VecEnd are the
+// original traceline endpoints used by the attacker, iBulletType is the type of bullet that hit the texture.
+// returns volume of strike instrument (crowbar) to play
+//   (this is not used for footsteps, only attack sound effects. --LRC)
+
+float TEXTURETYPE_PlaySound(TraceResult *ptr,  Vector vecSrc, Vector vecEnd, int iBulletType)
+{
+// hit the world, try to play sound based on texture material type
+	float fvol;
+	float fvolbar;
+	char *rgsz[4];
+	int cnt;
+	float fattn = ATTN_NORM;
+
+	if ( !g_pGameRules->PlayTextureSounds() )
+		return 0.0;
+
+	CBaseEntity *pEntity = CBaseEntity::Instance(ptr->pHit);
+
+	int chTextureType = TEXTURETYPE_Trace( vecSrc, vecEnd, pEntity );
 
 	switch (chTextureType)
 	{

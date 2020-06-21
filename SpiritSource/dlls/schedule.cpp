@@ -495,7 +495,21 @@ void CBaseMonster :: RunTask ( Task_t *pTask )
 		{
 			if (m_fSequenceFinished)
 			{
-				m_pCine->SequenceDone( this );
+				if (m_pCine->m_iRepeatsLeft > 0)
+				{
+					m_pCine->m_iRepeatsLeft--;
+					pev->frame = 0;
+					ResetSequenceInfo( );
+				}
+				else if (m_pCine->m_iRepeatsLeft == -1) // Ku2zoff
+				{
+					pev->frame = 0;
+					ResetSequenceInfo( );
+				}
+				else
+				{
+					TaskComplete();
+				}
 			}
 			break;
 		}
@@ -1302,7 +1316,10 @@ case TASK_GET_PATH_TO_BESTSCENT:
 				// Plant on script
 				if (m_pCine->m_fMoveTo == 4 || m_pCine->m_fMoveTo == 6)
 				{
-					pev->angles.y = m_hTargetEnt->pev->angles.y;
+					if (m_pCine->m_fTurnType == 0) //LRC
+						pev->angles.y = m_hTargetEnt->pev->angles.y;
+					else if (m_pCine->m_fTurnType == 1)
+						pev->angles.y = UTIL_VecToYaw(m_hTargetEnt->pev->origin - pev->origin);
 					pev->ideal_yaw = pev->angles.y;
 					pev->avelocity = Vector( 0, 0, 0 );
 					pev->velocity = Vector( 0, 0, 0 );
@@ -1318,9 +1335,22 @@ case TASK_GET_PATH_TO_BESTSCENT:
 		}
 	case TASK_FACE_SCRIPT:
 		{
-			if ( m_pCine != NULL )
+			if ( m_pCine != NULL && m_pCine->m_fMoveTo != 0) // movetype "no move" makes us ignore turntype
 			{
-				pev->ideal_yaw = UTIL_AngleMod( m_hTargetEnt->pev->angles.y );
+				switch (m_pCine->m_fTurnType)
+				{
+				case 0:
+					pev->ideal_yaw = UTIL_AngleMod( m_pCine->pev->angles.y );
+					break;
+				case 1:
+					// yes, this is inconsistent- turn to face uses the "target" and turn to angle uses the "cine".
+					if (m_hTargetEnt)
+						MakeIdealYaw ( m_hTargetEnt->pev->origin );
+					else
+						MakeIdealYaw ( m_pCine->pev->origin );
+					break;
+				// default: don't turn
+				}
 			}
 
 			TaskComplete();

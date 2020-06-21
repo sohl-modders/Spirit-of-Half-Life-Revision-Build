@@ -105,7 +105,9 @@ BOOL CHgun::Deploy( )
 
 void CHgun::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.4;
+	if(CVAR_GET_FLOAT("sv_weaponholster")) m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.4;
+	else m_pPlayer->m_flNextAttack = 0.0;
+
 	SendWeaponAnim( HGUN_DOWN );
 
 	if ( !m_pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] )

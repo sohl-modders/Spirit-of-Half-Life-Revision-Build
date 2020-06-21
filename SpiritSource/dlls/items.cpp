@@ -30,6 +30,7 @@
 #include "gamerules.h"
 
 extern int gmsgItemPickup;
+extern int gmsgFlashBattery; // Ku2zoff
 
 class CWorldItem : public CBaseEntity
 {
@@ -255,6 +256,19 @@ class CItemBattery : public CItem
 				WRITE_STRING( STRING(pev->classname) );
 			MESSAGE_END();
 
+			// Ku2zoff
+			if (pPlayer->m_iFlashBattery < 100 && 
+				((CVAR_GET_FLOAT("sv_flashcharge") == 1) || // suit batteries only
+				(CVAR_GET_FLOAT("sv_flashcharge") == 3))) // both batteries & armor
+			{
+				pPlayer->m_iFlashBattery = pPlayer->m_iFlashBattery + 50;
+				if (pPlayer->m_iFlashBattery > 100)
+ 					pPlayer->m_iFlashBattery = 100;
+				
+				MESSAGE_BEGIN( MSG_ONE, gmsgFlashBattery, NULL, ENT(pPlayer->pev) );
+					WRITE_BYTE(pPlayer->m_iFlashBattery);
+				MESSAGE_END();
+            }
 			
 			if(!gEvilImpulse101)
 			{

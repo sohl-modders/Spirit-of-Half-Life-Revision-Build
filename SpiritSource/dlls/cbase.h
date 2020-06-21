@@ -88,7 +88,30 @@ extern void ResetGlobalState( void );
 
 //extern CBaseEntity *g_pDesiredList; //LRC- handles DesiredVel, for movewith
 
+typedef enum
+{
+	USE_OFF = 0,
+	USE_ON = 1,
+	USE_SET = 2,
+	USE_TOGGLE = 3,
+	USE_KILL = 4,
+	USE_SAME = 5,
+} USE_TYPE;
+
 extern char* GetStringForUseType( USE_TYPE useType );
+
+//LRC- the values used for the new "global states" mechanism.
+typedef enum
+{
+	STATE_OFF = 0,	// disabled, inactive, invisible, closed, or stateless. Or non-alert monster.
+	STATE_TURN_ON,  // door opening, env_fade fading in, etc.
+	STATE_ON,		// enabled, active, visisble, or open. Or alert monster.
+	STATE_TURN_OFF, // door closing, monster dying (?).
+	STATE_IN_USE,	// player is in control (train/tank/barney/scientist).
+					// In_Use isn't very useful, I'll probably remove it.
+} STATE;
+
+extern char* GetStringForState( STATE state );
 
 extern void FireTargets( const char *targetName, CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
 
