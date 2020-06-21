@@ -140,7 +140,7 @@ BOOL CEgon::Deploy( void )
 	m_fireState = FIRE_OFF;
 
 	AnimRestore = TRUE;
-	return DefaultDeploy( "models/v_egon.mdl", "models/p_egon.mdl", EGON_DRAW, "egon", 0.7 );
+	return DefaultDeploy( "models/v_egon.mdl", "models/p_egon.mdl", EGON_DRAW, "egon", 1 );
 }
 
 void CEgon::Holster()
@@ -148,7 +148,7 @@ void CEgon::Holster()
 	if ( m_fireState != FIRE_OFF ) EndAttack();
 
 	ShutdownScreen();
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1;
 	SendWeaponAnim( EGON_HOLSTER );
 }
 
@@ -174,7 +174,7 @@ int CEgon::GetItemInfo(ItemInfo *p)
 
 BOOL CEgon::HasAmmo( void )
 {
-	//if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 ) return FALSE;
+	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 ) return FALSE;
 	return TRUE;
 }
 

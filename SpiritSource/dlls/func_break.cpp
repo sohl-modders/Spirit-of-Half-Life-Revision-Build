@@ -886,9 +886,9 @@ void CBreakable::Die( void )
 		WRITE_BYTE( cFlag );
 	MESSAGE_END();
 
-	float size = pev->size.x;
-	if ( size < pev->size.y )
-		size = pev->size.y;
+	float size = pev->size.y;
+	if ( size < pev->size.x )
+		size = pev->size.x;
 	if ( size < pev->size.z )
 		size = pev->size.z;
 

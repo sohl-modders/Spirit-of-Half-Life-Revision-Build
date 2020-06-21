@@ -88,19 +88,6 @@ extern void ResetGlobalState( void );
 
 //extern CBaseEntity *g_pDesiredList; //LRC- handles DesiredVel, for movewith
 
-//LRC- added USE_SAME, USE_NOT, and USE_KILL
-typedef enum
-{
-	USE_OFF = 0,
-	USE_ON = 1,
-	USE_SET = 2,
-	USE_TOGGLE = 3,
-	USE_KILL = 4,
-// special signals, never actually get sent:
-	USE_SAME = 5,
-	USE_NOT = 6,
-} USE_TYPE;
-
 extern char* GetStringForUseType( USE_TYPE useType );
 
 extern void FireTargets( const char *targetName, CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
@@ -172,23 +159,29 @@ public:
 	CBaseEntity			*m_pGoalEnt;// path corner we are heading towards
 	CBaseEntity			*m_pLink;// used for temporary link-list operations.
 
-	CBaseEntity			*m_pMoveWith; // LRC- the entity I move with.
-	int					m_MoveWith;	//LRC- Name of that entity
-	CBaseEntity			*m_pChildMoveWith;	//LRC- one of the entities that's moving with me.
-	CBaseEntity			*m_pSiblingMoveWith; //LRC- another entity that's Moving With the same ent as me. (linked list.)
-	Vector				m_vecMoveWithOffset; // LRC- Position I should be in relative to m_pMoveWith->pev->origin.
-	Vector				m_vecRotWithOffset; // LRC- Angles I should be facing relative to m_pMoveWith->pev->angles.
-	CBaseEntity			*m_pAssistLink; // LRC- link to the next entity which needs to be Assisted before physics are applied.
-	Vector				m_vecPostAssistVel; // LRC
-	Vector				m_vecPostAssistAVel; // LRC
-	float				m_fNextThink; // LRC - for SetNextThink and SetPhysThink. Marks the time when a think will be performed - not necessarily the same as pev->nextthink!
-	float				m_fPevNextThink; // LRC - always set equal to pev->nextthink, so that we can tell when the latter gets changed by the @#$^¬! engine.
-	int					m_iLFlags; // LRC- a new set of flags. (pev->spawnflags and pev->flags are full...)
-	virtual void		DesiredAction( void ) {}; // LRC - for postponing stuff until PostThink time, not as a think.
-	int					m_iStyle; // LRC - almost anything can have a lightstyle these days...
+	CBaseEntity	*m_pMoveWith;	// LRC- the entity I move with.
+	int		m_MoveWith;	//LRC- Name of that entity
+	CBaseEntity	*m_pChildMoveWith;	//LRC- one of the entities that's moving with me.
+	CBaseEntity	*m_pSiblingMoveWith; //LRC- another entity that's Moving With the same ent as me. (linked list.)
+	CBaseEntity	*m_pAssistLink; // LRC- link to the next entity which needs to be Assisted before physics are applied.
+	Vector		m_vecPostAssistVel; // LRC
+	Vector		m_vecPostAssistAVel; // LRC
+	Vector		m_vecPostAssistOrg;	//g-cont. child postorigin
+	Vector		m_vecPostAssistAng;	//g-cont. child postangles
 
-	Vector				m_vecSpawnOffset; // LRC- To fix things which (for example) MoveWith a door which Starts Open.
-	BOOL				m_activated;	// LRC- moved here from func_train. Signifies that an entity has already been
+	Vector		m_vecOffsetOrigin;	//spawn offset origin
+	Vector		m_vecOffsetAngles;	//spawn offset angles
+	Vector		m_vecParentAngles;	//temp container
+	Vector		m_vecParentOrigin;	//temp container
+
+	float		m_fNextThink; // LRC - for SetNextThink and SetPhysThink. Marks the time when a think will be performed - not necessarily the same as pev->nextthink!
+	float		m_fPevNextThink; // LRC - always set equal to pev->nextthink, so that we can tell when the latter gets changed by the @#$^¬! engine.
+	int		m_iLFlags; // LRC- a new set of flags. (pev->spawnflags and pev->flags are full...)
+	virtual void	DesiredAction( void ) {}; // LRC - for postponing stuff until PostThink time, not as a think.
+	int		m_iStyle; // LRC - almost anything can have a lightstyle these days...
+
+	Vector		m_vecSpawnOffset; // LRC- To fix things which (for example) MoveWith a door which Starts Open.
+	BOOL		m_activated; // LRC- moved here from func_train. Signifies that an entity has already been
 										// activated. (and hence doesn't need reactivating.)
 
 	//LRC - decent mechanisms for setting think times!
@@ -197,27 +190,9 @@ public:
 	virtual void		SetNextThink( float delay, BOOL correctSpeed );
 	virtual void		AbsoluteNextThink( float time ) { AbsoluteNextThink(time, FALSE); }
 	virtual void		AbsoluteNextThink( float time, BOOL correctSpeed );
-	void				SetEternalThink( );
-	// this is called by an entity which is starting to move, and will reach
-	// its destination after the given wait.
-	// Its think function should be called at that time, to make it stop moving.
-//	void				SetPhysThink( float delay );
-	// this is called by an entity which is movingWith another entity.
-	// it signifies that the other entity is starting to move and will reach its
-	// destination after the given wait.
-	// This entity will need to think at that time (so that physics gets
-	// processed correctly), but the Think function shouldn't actually get
-	// called; the parent will intervene to make it stop.
-//	void				SetMWPhysThink( float delay );
-	// this is called by an entity which is starting to move, and wants its children
-	// to follow it.
-//	void				SetChildrenThink( float delay );
+	void			SetEternalThink( );
 
-	//LRC use this instead of "SetThink( NULL )" or "pev->nextthink = -1".
 	void	DontThink( void );
-	//LRC similar, but called by the parent when a think needs to be aborted.
-//	void	DontMWThink( void );
-
 	virtual void ThinkCorrection( void );
 
 	//LRC - loci
@@ -254,11 +229,15 @@ public:
 	virtual int		Save( CSave &save );
 	virtual int		Restore( CRestore &restore );
 	//LRC - if I MoveWith something, then only cross transitions if the MoveWith entity does too.
-	virtual int		ObjectCaps( void ) { return m_pMoveWith?m_pMoveWith->ObjectCaps()&FCAP_ACROSS_TRANSITION:FCAP_ACROSS_TRANSITION; }
+	virtual int	ObjectCaps( void ) { return m_pMoveWith?m_pMoveWith->ObjectCaps()&FCAP_ACROSS_TRANSITION:FCAP_ACROSS_TRANSITION; }
 	virtual void	Activate( void ); //LRC
-	void			InitMoveWith( void ); //LRC - called by Activate() to set up moveWith values
+	void		InitMoveWith( void ); //LRC - called by Activate() to set up moveWith values
+	void		SetParent( int m_iNewParent, int m_iAttachment = 0);//g-cont. two version of SetParent. from xash 0.4
+          void		SetParent( CBaseEntity *pParent, int m_iAttachment = 0 );//g-cont. dynamiclly link parents
+	void		ResetParent( void );
+	void		ClearPointers( void ); //g-cont. directly clear all movewith pointer before changelevel
 	virtual void	PostSpawn( void ) {} //LRC - called by Activate() to handle entity-specific initialisation.
-										 // (mostly setting positions, for MoveWith support)
+	// (mostly setting positions, for MoveWith support)
 
 	// Setup the object->object collision box (pev->mins / pev->maxs is the object->world collision box)
 	virtual void	SetObjectCollisionBox( void );
@@ -296,6 +275,7 @@ public:
 	virtual void	TraceAttack( entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType);
 	virtual int		TakeDamage( entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType );
 	virtual int		TakeHealth( float flHealth, int bitsDamageType );
+	virtual int		TakeArmor( float flArmor );
 	virtual void	Killed( entvars_t *pevAttacker, int iGib );
 	virtual int		BloodColor( void ) { return DONT_BLEED; }
 	virtual void	TraceBleed( float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType );

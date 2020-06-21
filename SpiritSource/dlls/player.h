@@ -159,13 +159,15 @@ public:
 	BOOL			m_fLongJump; // does this player have the longjump module?
 
 	float       m_tSneaking;
-	int			m_iUpdateTime;		// stores the number of frame ticks before sending HUD update messages
-	int			m_iClientHealth;	// the health currently known by the client.  If this changes, send a new
-	int			m_iClientBattery;	// the Battery currently known by the client.  If this changes, send a new
-	int			m_iHideHUD;		// the players hud weapon info is to be hidden
-	int			m_iClientHideHUD;
-	int			m_iFOV;			// field of view
-	int			m_iClientFOV;	// client's known FOV
+	int	m_iUpdateTime;	 // stores the number of frame ticks before sending HUD update messages
+	int	m_iClientHealth;	 // the health currently known by the client.  If this changes, send a new
+	int	m_iClientBattery;	 // the Battery currently known by the client.  If this changes, send a new
+	int	m_iClientFlashlight; // the FlashLight Battery currently known by the client.
+	int	m_iClientFlashState; // the falshlight status
+	int	m_iHideHUD;	 // the players hud weapon info is to be hidden
+	int	m_iClientHideHUD;
+	int	m_iFOV;		// field of view
+	int	m_iClientFOV;	// client's known FOV
 
 	// usable player items 
 	CBasePlayerItem	*m_rgpPlayerItems[MAX_ITEM_TYPES];
@@ -199,6 +201,7 @@ public:
 	virtual void PostThink( void );
 	virtual Vector GetGunPosition( void );
 	virtual int TakeHealth( float flHealth, int bitsDamageType );
+	virtual int TakeArmor( float flArmor );
 	virtual void TraceAttack( entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType);
 	virtual int TakeDamage( entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType);
 	virtual void	Killed( entvars_t *pevAttacker, int iGib );

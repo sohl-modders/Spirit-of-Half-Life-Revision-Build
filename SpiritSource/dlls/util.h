@@ -15,15 +15,28 @@
 //
 // Misc utility code
 //
+#ifndef UTIL_H
+#define UTIL_H
+
 #include <string.h>
 
-#ifndef ACTIVITY_H
 #include "activity.h"
-#endif
-
-#ifndef ENGINECALLBACK_H
 #include "enginecallback.h"
-#endif
+
+//g-cont. safe precaching models & sounds
+int PRECACHE_MODEL( char* s );		//classic precache 
+int PRECACHE_MODEL( string_t s );		//pev->model as argument
+int PRECACHE_MODEL( string_t s, char *e );	//custom model precache
+
+int PRECACHE_SOUND( char* s );		//classic precache
+int PRECACHE_SOUND( string_t s );		//pev->noise as argument
+int PRECACHE_SOUND( string_t s, char *e );	//custom model precache
+
+void SET_MODEL( edict_t *e, string_t model );	//pev->model as argument
+void SET_MODEL( edict_t *e, const char *model );	//classic set model
+void SET_MODEL( edict_t *e, string_t s, char *c );//custom model set
+
+unsigned short PRECACHE_EVENT( int type, const char *psz );
 
 inline void MESSAGE_BEGIN( int msg_dest, int msg_type, const float *pOrigin, entvars_t *ent );  // implementation later in this file
 
@@ -144,13 +157,14 @@ inline void MESSAGE_BEGIN( int msg_dest, int msg_type, const float *pOrigin, ent
 // Testing the three types of "entity" for nullity
 //LRC- four types, rather; see cbase.h
 #define eoNullEntity 0
-inline BOOL FNullEnt(EOFFSET eoffset)			{ return eoffset == 0; }
+inline BOOL FNullEnt(EOFFSET eoffset)		{ return eoffset == 0; }
 inline BOOL FNullEnt(const edict_t* pent)	{ return pent == NULL || FNullEnt(OFFSET(pent)); }
-inline BOOL FNullEnt(entvars_t* pev)				{ return pev == NULL || FNullEnt(OFFSET(pev)); }
+inline BOOL FNullEnt(entvars_t* pev)		{ return pev == NULL || FNullEnt(OFFSET(pev)); }
 
 // Testing strings for nullity
 #define iStringNull 0
-inline BOOL FStringNull(int iString)			{ return iString == iStringNull; }
+inline BOOL FStringNull(int iString)	{ return iString == iStringNull; }
+inline BOOL FStringNull(char *string)	{ return strlen(string) - 1; }
 
 #define cchMapNameMost 32
 
@@ -179,6 +193,16 @@ typedef enum
 	MONSTERSTATE_DEAD
 
 } MONSTERSTATE;
+
+typedef enum
+{
+	USE_OFF = 0,
+	USE_ON = 1,
+	USE_SET = 2,
+	USE_TOGGLE = 3,
+	USE_KILL = 4,
+	USE_SHOWINFO = 5,
+} USE_TYPE;
 
 //LRC- the values used for the new "global states" mechanism.
 typedef enum
@@ -213,19 +237,19 @@ inline BOOL FClassnameIs(entvars_t* pev, const char* szClassname)
 class CBaseEntity;
 
 // Misc. Prototypes
-extern void			UTIL_SetSize			(entvars_t* pev, const Vector &vecMin, const Vector &vecMax);
-extern float		UTIL_VecToYaw			(const Vector &vec);
-extern Vector		UTIL_VecToAngles		(const Vector &vec);
-extern float		UTIL_AngleMod			(float a);
-extern float		UTIL_AngleDiff			( float destAngle, float srcAngle );
+extern void	UTIL_SetSize	(entvars_t* pev, const Vector &vecMin, const Vector &vecMax);
+extern float	UTIL_VecToYaw	(const Vector &vec);
+extern Vector	UTIL_VecToAngles	(const Vector &vec);
+extern float	UTIL_AngleMod	(float a);
+extern float	UTIL_AngleDiff	( float destAngle, float srcAngle );
 
-extern Vector		UTIL_AxisRotationToAngles	(const Vector &vec, float angle); //LRC
-extern Vector		UTIL_AxisRotationToVec	(const Vector &vec, float angle); //LRC
+extern Vector	UTIL_AxisRotationToAngles	(const Vector &vec, float angle); //LRC
+extern Vector	UTIL_AxisRotationToVec	(const Vector &vec, float angle); //LRC
 
 //LRC
 class CBaseAlias;
-extern void			UTIL_AddToAliasList( CBaseAlias *pAlias );
-extern void			UTIL_FlushAliases( void );
+extern void	UTIL_AddToAliasList( CBaseAlias *pAlias );
+extern void	UTIL_FlushAliases( void );
 
 extern CBaseEntity	*UTIL_FindEntityInSphere(CBaseEntity *pStartEntity, const Vector &vecCenter, float flRadius);
 extern CBaseEntity	*UTIL_FindEntityByString(CBaseEntity *pStartEntity, const char *szKeyword, const char *szValue );
@@ -252,20 +276,21 @@ inline void UTIL_MakeVectorsPrivate( const Vector &vecAngles, float *p_vForward,
 	g_engfuncs.pfnAngleVectors( vecAngles, p_vForward, p_vRight, p_vUp );
 }
 
-extern void			UTIL_MakeAimVectors		( const Vector &vecAngles ); // like MakeVectors, but assumes pitch isn't inverted
-extern void			UTIL_MakeInvVectors		( const Vector &vec, globalvars_t *pgv );
+extern void UTIL_MakeAimVectors	( const Vector &vecAngles ); // like MakeVectors, but assumes pitch isn't inverted
+extern void UTIL_MakeInvVectors	( const Vector &vec, globalvars_t *pgv );
 
-extern void			UTIL_SetEdictOrigin			( edict_t *pEdict, const Vector &vecOrigin );
-extern void			UTIL_SetOrigin			( CBaseEntity* pEntity, const Vector &vecOrigin );
+extern void UTIL_SetEdictOrigin	( edict_t *pEdict, const Vector &vecOrigin );
+extern void UTIL_SetOrigin		( CBaseEntity* pEntity, const Vector &vecOrigin );
+extern void UTIL_SetAngles		( CBaseEntity *pEntity, const Vector &vecAngles );
 
-extern void			UTIL_EmitAmbientSound	( edict_t *entity, const Vector &vecOrigin, const char *samp, float vol, float attenuation, int fFlags, int pitch );
-extern void			UTIL_ParticleEffect		( const Vector &vecOrigin, const Vector &vecDirection, ULONG ulColor, ULONG ulCount );
-extern void			UTIL_ScreenShake		( const Vector &center, float amplitude, float frequency, float duration, float radius );
-extern void			UTIL_ScreenShakeAll		( const Vector &center, float amplitude, float frequency, float duration );
-extern void			UTIL_ShowMessage		( const char *pString, CBaseEntity *pPlayer );
-extern void			UTIL_ShowMessageAll		( const char *pString );
-extern void			UTIL_ScreenFadeAll		( const Vector &color, float fadeTime, float holdTime, int alpha, int flags );
-extern void			UTIL_ScreenFade			( CBaseEntity *pEntity, const Vector &color, float fadeTime, float fadeHold, int alpha, int flags );
+extern void UTIL_EmitAmbientSound	( edict_t *entity, const Vector &vecOrigin, const char *samp, float vol, float attenuation, int fFlags, int pitch );
+extern void UTIL_ParticleEffect	( const Vector &vecOrigin, const Vector &vecDirection, ULONG ulColor, ULONG ulCount );
+extern void UTIL_ScreenShake		( const Vector &center, float amplitude, float frequency, float duration, float radius );
+extern void UTIL_ScreenShakeAll	( const Vector &center, float amplitude, float frequency, float duration );
+extern void UTIL_ShowMessage		( const char *pString, CBaseEntity *pPlayer );
+extern void UTIL_ShowMessageAll	( const char *pString );
+extern void UTIL_ScreenFadeAll	( const Vector &color, float fadeTime, float holdTime, int alpha, int flags );
+extern void UTIL_ScreenFade		( CBaseEntity *pEntity, const Vector &color, float fadeTime, float fadeHold, int alpha, int flags );
 
 typedef enum { ignore_monsters=1, dont_ignore_monsters=0, missile=2 } IGNORE_MONSTERS;
 typedef enum { ignore_glass=1, dont_ignore_glass=0 } IGNORE_GLASS;
@@ -584,3 +609,5 @@ int HaveCamerasInPVS( edict_t* edict );
 BOOL IsMultiplayer ( void );
 Vector UTIL_MirrorVector( Vector angles );
 Vector UTIL_MirrorPos ( Vector endpos );
+
+#endif //UTIL_H

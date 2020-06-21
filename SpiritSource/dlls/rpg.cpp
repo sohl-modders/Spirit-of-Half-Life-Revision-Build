@@ -346,14 +346,16 @@ int CRpg::GetItemInfo(ItemInfo *p)
 
 BOOL CRpg::Deploy( )
 {
-	return DefaultDeploy( "models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW, "rpg" );
+//	return DefaultDeploy( "models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW, "rpg" );
+//	scrama: draw rpg faster then glock? suckers
+	return DefaultDeploy( "models/v_rpg.mdl", "models/p_rpg.mdl", RPG_DRAW, "rpg", 1 );
 }
 
 void CRpg::Holster( )
 {
 	ShutdownScreen();//set skin to 0 manually
 	m_fInReload = FALSE;// cancel any reload in progress.
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1;
 	SendWeaponAnim( RPG_HOLSTER );
 }
 

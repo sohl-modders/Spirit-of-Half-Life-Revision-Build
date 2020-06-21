@@ -50,9 +50,9 @@ void CInfoTarget :: Spawn( void )
 {
 	//Precache();
 	pev->solid = SOLID_NOT;
+	SetBits( m_iLFlags, LF_POINTENTITY );
 	if (pev->spawnflags & SF_TARGET_HACK_VISIBLE)
 	{
-		PRECACHE_MODEL("sprites/null.spr");
 		SET_MODEL(ENT(pev),"sprites/null.spr");
 		UTIL_SetSize(pev, g_vecZero, g_vecZero);
 	}
@@ -4564,33 +4564,7 @@ LINK_ENTITY_TO_CLASS( env_fog, CEnvFog );
 //=========================================================
 // LRC - env_sky, an unreal tournament-style sky effect
 //=========================================================
-class CEnvSky : public CBaseEntity
-{
-public:
-	void Activate( void );
-	void DesiredAction( void );
-};
-
-void CEnvSky :: Activate ( void )
-{
-	UTIL_DesiredAction( this );
-	pev->effects |= EF_NODRAW;
-	pev->nextthink = gpGlobals->time + 1.0;
-}
-
-extern int gmsgSetSky;
-
-void CEnvSky :: DesiredAction ()
-{
-	MESSAGE_BEGIN(MSG_BROADCAST, gmsgSetSky, NULL);
-		WRITE_BYTE(1); // mode
-		WRITE_COORD(pev->origin.x); // view position
-		WRITE_COORD(pev->origin.y);
-		WRITE_COORD(pev->origin.z);
-	MESSAGE_END();
-}
-
-LINK_ENTITY_TO_CLASS( env_sky, CEnvSky );
+LINK_ENTITY_TO_CLASS( env_sky, CPointEntity );
 
 
 

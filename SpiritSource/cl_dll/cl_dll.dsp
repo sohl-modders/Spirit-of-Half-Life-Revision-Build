@@ -18,6 +18,7 @@ CFG=cl_dll - Win32 Release
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
 !MESSAGE "cl_dll - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "cl_dll - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -27,6 +28,9 @@ CFG=cl_dll - Win32 Release
 CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
+
+!IF  "$(CFG)" == "cl_dll - Win32 Release"
+
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir ".\Release"
@@ -39,8 +43,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /MT /W3 /GX /Zi /O1 /I "..\utils\vgui\include" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\dlls" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "CLIENT_DLL" /YX /FD /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\utils\vgui\include" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\dlls" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "CLIENT_DLL" /FD /c
+# SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -50,20 +54,64 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib winmm.lib ../utils/vgui/lib/vgui.lib wsock32.lib opengl32.lib /nologo /subsystem:windows /dll /machine:I386 /out:".\Release\client.dll"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib winmm.lib ../utils/vgui/lib/vgui.lib wsock32.lib opengl32.lib /nologo /subsystem:windows /dll /pdb:none /machine:I386 /out:".\Release\client.dll"
 # SUBTRACT LINK32 /map
 # Begin Custom Build
 TargetDir=.\Release
 InputPath=.\Release\client.dll
 SOURCE="$(InputPath)"
 
-"D:\games\hl1\spirit\cl_dlls\client.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(TargetDir)\client.dll "D:\games\hl1\spirit\cl_dlls\client.dll"
+"..\..\..\cl_dlls\client.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy $(TargetDir)\client.dll "..\..\..\cl_dlls\client.dll"
 
 # End Custom Build
+
+!ELSEIF  "$(CFG)" == "cl_dll - Win32 Debug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "cl_dll___Win32_Debug"
+# PROP BASE Intermediate_Dir "cl_dll___Win32_Debug"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir ".\Debug"
+# PROP Intermediate_Dir ".\Debug"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MT /W3 /GX /Zi /O2 /I "..\utils\vgui\include" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\dlls" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "CLIENT_DLL" /YX /FD /c
+# SUBTRACT BASE CPP /Fr
+# ADD CPP /nologo /MT /W3 /Gm /GX /ZI /Od /I "..\utils\vgui\include" /I "..\engine" /I "..\common" /I "..\pm_shared" /I "..\dlls" /D "WIN32" /D "DEBUG" /D "_WINDOWS" /D "CLIENT_DLL" /Fr /FD /c
+# SUBTRACT CPP /YX
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib winmm.lib ../utils/vgui/lib/vgui.lib wsock32.lib opengl32.lib /nologo /subsystem:windows /dll /machine:I386 /out:".\Release\client.dll"
+# SUBTRACT BASE LINK32 /map
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib winmm.lib ../utils/vgui/lib/vgui.lib wsock32.lib opengl32.lib /nologo /subsystem:windows /dll /incremental:yes /debug /machine:I386 /out:".\Release\client.dll"
+# SUBTRACT LINK32 /map
+# Begin Custom Build
+TargetDir=.\Release
+InputPath=.\Release\client.dll
+SOURCE="$(InputPath)"
+
+"..\..\..\cl_dlls\client.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy $(TargetDir)\client.dll "..\..\..\cl_dlls\client.dll"
+
+# End Custom Build
+
+!ENDIF 
+
 # Begin Target
 
 # Name "cl_dll - Win32 Release"
+# Name "cl_dll - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
@@ -210,7 +258,18 @@ SOURCE=.\message.cpp
 # Begin Source File
 
 SOURCE=.\overview.cpp
+
+!IF  "$(CFG)" == "cl_dll - Win32 Release"
+
 # PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "cl_dll - Win32 Debug"
+
+# PROP BASE Exclude_From_Build 1
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 

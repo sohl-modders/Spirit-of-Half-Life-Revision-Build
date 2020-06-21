@@ -928,6 +928,7 @@ bool CHudSpectator::ParseOverviewFile( )
 
 	if (!pfile)
 	{
+		
 		gEngfuncs.Con_Printf("Couldn't open file %s. Using default values for overiew mode.\n", filename );
 		return false;
 	}

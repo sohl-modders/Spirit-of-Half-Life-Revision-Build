@@ -94,67 +94,8 @@ STATE CBaseDMStart::GetState( CBaseEntity *pEntity )
 void CBaseEntity::UpdateOnRemove( void )
 {
 	int	i;
-	CBaseEntity* pTemp;
 
-	if (!g_pWorld)
-	{
-		ALERT(at_debug, "UpdateOnRemove has no AssistList!\n");
-		return;
-	}
-
-	//LRC - remove this from the AssistList.
-	for (pTemp = g_pWorld; pTemp->m_pAssistLink != NULL; pTemp = pTemp->m_pAssistLink)
-	{
-		if (this == pTemp->m_pAssistLink)
-		{
-//			ALERT(at_console,"REMOVE: %s removed from the Assist List.\n", STRING(pev->classname));
-			pTemp->m_pAssistLink = this->m_pAssistLink;
-			this->m_pAssistLink = NULL;
-			break;
-		}
-	}
-
-	//LRC
-	if (m_pMoveWith)
-	{
-		// if I'm moving with another entity, take me out of the list. (otherwise things crash!)
-		pTemp = m_pMoveWith->m_pChildMoveWith;
-		if (pTemp == this)
-		{
-			m_pMoveWith->m_pChildMoveWith = this->m_pSiblingMoveWith;
-		}
-		else
-		{
-			while (pTemp->m_pSiblingMoveWith)
-			{
-				if (pTemp->m_pSiblingMoveWith == this)
-				{
-					pTemp->m_pSiblingMoveWith = this->m_pSiblingMoveWith;
-					break;
-				}
-				pTemp = pTemp->m_pSiblingMoveWith;
-			}
-
-		}
-//		ALERT(at_console,"REMOVE: %s removed from the %s ChildMoveWith list.\n", STRING(pev->classname), STRING(m_pMoveWith->pev->targetname));
-	}
-
-	//LRC - do the same thing if another entity is moving with _me_.
-	if (m_pChildMoveWith)
-	{
-		CBaseEntity* pCur = m_pChildMoveWith;
-		CBaseEntity* pNext;
-		while (pCur != NULL)
-		{
-			pNext = pCur->m_pSiblingMoveWith;
-			// bring children to a stop
-			UTIL_SetMoveWithVelocity(pCur, g_vecZero, 100);
-			UTIL_SetMoveWithAvelocity(pCur, g_vecZero, 100);
-			pCur->m_pMoveWith = NULL;
-			pCur->m_pSiblingMoveWith = NULL;
-			pCur = pNext;
-		}
-	}
+	ResetParent();
 
 	if ( FBitSet( pev->flags, FL_GRAPHED ) )
 	{
@@ -253,6 +194,17 @@ void CBaseEntity :: SUB_UseTargets( CBaseEntity *pActivator, USE_TYPE useType, f
 	}
 }
 
+//========================================================================
+// FireTargets - supported prefix "+", "-", "!", ">", "<", "?".
+// supported also this and self pointers - e.g. "fadein(mywall)"
+//========================================================================
+void FireTargets( string_t targetName, CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
+{
+	//overload version UTIL_FireTargets
+	if (!targetName) return;//no execute code, if target blank
+	
+	FireTargets( STRING(targetName), pActivator, pCaller, useType, value);
+}
 
 void FireTargets( const char *targetName, CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
 {
@@ -262,12 +214,8 @@ void FireTargets( const char *targetName, CBaseEntity *pActivator, CBaseEntity *
 	int i,j, found = false;
 	char szBuf[80];
 
-	if ( !targetName )
-		return;
-	if (useType == USE_NOT)
-		return;
+	if ( !targetName ) return;
 
-	//LRC - allow changing of usetype
 	if (targetName[0] == '+')
 	{
 		targetName++;
@@ -278,75 +226,80 @@ void FireTargets( const char *targetName, CBaseEntity *pActivator, CBaseEntity *
 		targetName++;
 		useType = USE_OFF;
 	}
+ 	else if (targetName[0] == '<')
+	{
+		targetName++;
+		useType = USE_SET;
+	}
 	else if (targetName[0] == '!')
 	{
 		targetName++;
 		useType = USE_KILL;
 	}
-	else if (targetName[0] == '>')
-	{
-		targetName++;
-		useType = USE_SAME;
-	}
-
-	ALERT( at_aiconsole, "Firing: (%s)\n", targetName );
 
 	pTarget = UTIL_FindEntityByTargetname(pTarget, targetName, pActivator);
-	if( !pTarget )
+
+	if( !pTarget )//smart field name ?
 	{
-		// it's not an entity name; check for a locus specifier, e.g: "fadein(mywall)"
+		//try to extract value from name (it's more usefully than "locus" specifier)
 		for (i = 0; targetName[i]; i++)
 		{
-			if (targetName[i] == '(')
+			if (targetName[i] == '.')//value specifier
 			{
-				i++;
-				for (j = i; targetName[j]; j++)
-				{
-					if (targetName[j] == ')')
-					{
-						strncpy(szBuf, targetName+i, j-i);
-						szBuf[j-i] = 0;
-						pActivator = UTIL_FindEntityByTargetname(NULL, szBuf, inputActivator);
-						if (!pActivator)
-						{
-							//ALERT(at_console, "Missing activator \"%s\"\n", szBuf);
-							return; // it's a locus specifier, but the locus is invalid.
-						}
-						//ALERT(at_console, "Found activator \"%s\"\n", STRING(pActivator->pev->targetname));
-						found = true;
-			break;
-					}
-				}
-				if (!found) ALERT(at_error, "Missing ')' in target value \"%s\"", inputTargetName);
+				value = atof(&targetName[i+1]);
+				sprintf(szBuf, targetName);
+				szBuf[i] = 0;
+				targetName = szBuf;
+				pTarget = UTIL_FindEntityByTargetname(NULL, targetName, inputActivator);						
 				break;
 			}
 		}
-		if (!found) return; // no, it's not a locus specifier.
 
-		strncpy(szBuf, targetName, i-1);
-		szBuf[i-1] = 0;
-		targetName = szBuf;
-		pTarget = UTIL_FindEntityByTargetname(NULL, targetName, inputActivator);
+		if( !pTarget )//try to extract activator specified
+		{
+			for (i = 0; targetName[i]; i++)
+			{
+				if (targetName[i] == '(')
+				{
+					i++;
+					for (j = i; targetName[j]; j++)
+					{
+						if (targetName[j] == ')')
+						{
+							strncpy(szBuf, targetName+i, j-i);
+							szBuf[j-i] = 0;
+							pActivator = UTIL_FindEntityByTargetname(NULL, szBuf, inputActivator);
+							if (!pActivator) return; //it's a locus specifier, but the locus is invalid.
+							found = true;
+							break;
+						}
+					}
+					if (!found) ALERT(at_error, "Missing ')' in targetname: %s", inputTargetName);
+					break;
+				}
+			}
+	         		if (!found) return; // no, it's not a locus specifier.
 
-		if (!pTarget) return; // it's a locus specifier all right, but the target's invalid.
+			strncpy(szBuf, targetName, i-1);
+			szBuf[i-1] = 0;
+			targetName = szBuf;
+			pTarget = UTIL_FindEntityByTargetname(NULL, targetName, inputActivator);
+
+			if (!pTarget)return; // it's a locus specifier all right, but the target's invalid.
+		}
 	}
-
+          
+          ALERT( at_aiconsole, "Firing: (%s) with %s and value %g\n", targetName, GetStringForUseType( useType ), value );
+	
 	do // start firing targets
 	{
 		if ( !(pTarget->pev->flags & FL_KILLME) )	// Don't use dying ents
 		{
-			if (useType == USE_KILL)
-			{
-				ALERT( at_aiconsole, "Use_kill on %s\n", STRING( pTarget->pev->classname ) );
-				UTIL_Remove( pTarget );
-			}
-			else
-		{
-			ALERT( at_aiconsole, "Found: %s, firing (%s)\n", STRING(pTarget->pev->classname), targetName );
-			pTarget->Use( pActivator, pCaller, useType, value );
+			if (useType == USE_KILL) UTIL_Remove( pTarget );
+			else pTarget->Use( pActivator, pCaller, useType, value );
 		}
-	}
 		pTarget = UTIL_FindEntityByTargetname(pTarget, targetName, inputActivator);
+
 	} while (pTarget);
 
 	//LRC- Firing has finished, aliases can now reflect their new values.
@@ -429,10 +382,10 @@ void SetMovedir( entvars_t *pev )
 {
 	pev->movedir = GetMovedir(pev->angles);
 	pev->angles = g_vecZero;
-	}
+}
 
 Vector GetMovedir( Vector vecAngles )
-	{
+{
 	if (vecAngles == Vector(0, -1, 0))
 	{
 		return Vector(0, 0, 1);
@@ -754,11 +707,11 @@ void CBaseToggle :: AngularMoveDoneNow( void )
 	UTIL_SetAvelocity(this, g_vecZero);
 	if (m_pMoveWith)
 	{
-		UTIL_SetAngles(this, m_vecFinalAngle + m_pMoveWith->pev->angles);
+		UTIL_AssignAngles(this, m_vecFinalAngle + m_pMoveWith->pev->angles);
 	}
 	else
 	{
-		UTIL_SetAngles(this, m_vecFinalAngle);
+		UTIL_AssignAngles(this, m_vecFinalAngle);
 	}
 	DontThink();
 	if ( m_pfnCallWhenMoveDone )
@@ -932,6 +885,6 @@ void CInfoMoveWith :: Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TY
 	// add this entity to the list of children
 	m_pSiblingMoveWith = m_pMoveWith->m_pChildMoveWith; // may be null: that's fine by me.
 	m_pMoveWith->m_pChildMoveWith = this;
-	m_vecMoveWithOffset = pev->origin - m_pMoveWith->pev->origin;
+	m_vecOffsetOrigin = pev->origin - m_pMoveWith->pev->origin;
 	UTIL_SetVelocity(this, g_vecZero); // match speed with the new entity
 }

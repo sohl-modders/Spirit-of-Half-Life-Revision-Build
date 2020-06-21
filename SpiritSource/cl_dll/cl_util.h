@@ -81,7 +81,40 @@ inline struct cvar_s *CVAR_CREATE( const char *cv, const char *val, const int fl
 #define SetCrosshair (*gEngfuncs.pfnSetCrosshair)
 #define AngleVectors (*gEngfuncs.pfnAngleVectors)
 
+#define CHARSPACE	0
 
+inline int ChWidth(int number)
+{
+	if (! CVAR_GET_FLOAT("hud_altfont")) return gHUD.m_scrinfo.charWidths[ number ];
+	int chWidth[257] =
+	{
+		 9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,
+		 9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,
+		16,  4,  7,  9,  7, 13,  9,  4,  5,  5,  8,  6,  5,  6,  4,  6,
+		 8,  6,  8,  8,  8,  8,  8,  8,  8,  8,  4,  5,  8,  8,  8,  8,
+
+//		 @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
+//		 P   Q   R   S   T   U   V   W   X   Y   Z
+		14, 10, 10,  9, 10,  9,  9, 10, 10,  4,  8, 10,  9, 12, 10, 10,	// lat upcase
+		10, 10, 11,  9, 10, 10, 11, 16, 11, 12, 11,  5,  6,  5,  7, 10,
+		 6,  8,  8,  8,  8,  8,  6,  8,  8,  5,  4,  8,  5, 12,  8,  8,	// lat lowcase
+		 8,  8,  6,  8,  6,  8, 10, 12, 10, 10,  8,  6,  3,  6,  7,  9,
+
+		12,  9,  4,  7,  7,  7,  8,  8,  8, 14, 15,  5, 14, 10, 12,  9,
+		 9,  4,  4, 10,  7,  6, 10, 15,  9, 13, 13,  6, 12,  8,  9,  9,
+		16,  9, 10,  8, 10,  7,  3,  7,  9, 12,  9,  8,  9,  5, 12,  5,
+		 6,  8,  4,  5,  7,  8,  9,  4,  8, 14,  7,  8,  4,  9,  8,  5,
+
+//		 À   Á   Â   Ã   Ä   Å   Æ   Ç   È   É   Ê   Ë   Ì   Í   Î   Ï
+//		 Ð   Ñ   Ò   Ó   Ô   Õ   Ö   ×   Ø   Ù   Ú   Û   Ü   Ý   Þ   ß
+		10, 10, 10,  9, 12,  9, 16, 10, 10, 10, 10, 10, 12, 10, 10, 10,	// cyr upcase
+		10,  9, 10,  9, 14, 10, 13,  9, 12, 13, 11, 12,  9,  9, 12, 10,
+		 8,  8,  8,  7, 10,  8, 12,  8,  8,  8,  8,  8,  9,  8,  8,  8,	// cyr lowcase
+		 8,  8,  8, 10, 12, 10,  9,  8, 12, 13, 10, 10,  8,  8, 10,  8, 10
+	};
+	return chWidth[number] + CHARSPACE;
+
+}
 // Gets the height & width of a sprite,  at the specified frame
 inline int SPR_Height( HSPRITE x, int f )	{ return gEngfuncs.pfnSPR_Height(x, f); }
 inline int SPR_Width( HSPRITE x, int f )	{ return gEngfuncs.pfnSPR_Width(x, f); }
@@ -89,7 +122,37 @@ inline int SPR_Width( HSPRITE x, int f )	{ return gEngfuncs.pfnSPR_Width(x, f); 
 inline 	client_textmessage_t	*TextMessageGet( const char *pName ) { return gEngfuncs.pfnTextMessageGet( pName ); }
 inline 	int						TextMessageDrawChar( int x, int y, int number, int r, int g, int b ) 
 { 
-	return gEngfuncs.pfnDrawCharacter( x, y, number, r, g, b ); 
+//
+//		alternative font in font.spr
+//	
+	if (! CVAR_GET_FLOAT ("hud_altfont"))
+		return gEngfuncs.pfnDrawCharacter( x, y, number, r, g, b );
+
+
+	if (number == '\n' || number == '\r' || !number)
+		return 0;
+
+	//ConsolePrint((char*)number);
+	wrect_t char_rect;
+
+	if (number == 1) number = 255;
+
+	char_rect.left = (number % 16) * 16;
+	char_rect.top = (int)floor(number / 16.0f) * 16;
+	char_rect.right = char_rect.left + 16;
+	char_rect.bottom = char_rect.top + 16;
+
+	HSPRITE hspr = SPR_Load( "sprites/font.spr" );
+   
+	SPR_Set(hspr, r, g, b );
+
+	SPR_DrawAdditive(0,  x, y, &char_rect);
+	return 1;
+}
+
+inline void ConsolePrint( const char *string )
+{
+	gEngfuncs.pfnConsolePrint( string );
 }
 
 inline int DrawConsoleString( int x, int y, const char *string )
@@ -107,11 +170,6 @@ inline int ConsoleStringLen( const char *string )
 	int _width, _height;
 	GetConsoleStringSize( string, &_width, &_height );
 	return _width;
-}
-
-inline void ConsolePrint( const char *string )
-{
-	gEngfuncs.pfnConsolePrint( string );
 }
 
 inline void CenterPrint( const char *string )

@@ -33,6 +33,8 @@ WEAPON *gpActiveSel;	// NULL means off, 1 means just the menu bar, otherwise
 						// this points to the active weapon menu item
 WEAPON *gpLastSel;		// Last weapon menu selection 
 
+WEAPON *gpCurWeapon;		// Scrama just a current weapon
+
 client_sprite_t *GetSpriteList(client_sprite_t *pList, const char *psz, int iRes, int iCount);
 
 WeaponsResource gWR;
@@ -289,6 +291,15 @@ int CHudAmmo::Init(void)
 
 	CVAR_CREATE( "hud_drawhistory_time", HISTORY_DRAW_TIME, 0 );
 	CVAR_CREATE( "hud_fastswitch", "0", FCVAR_ARCHIVE );		// controls whether or not weapons can be selected in one keypress
+// scrama: RB cvars
+//cvar_t	sv_handstyle	= {"sv_handstyle", "0", FCVAR_ARCHIVE };
+//cvar_t	sv_nightvision	= {"sv_nightvision", "0", FCVAR_ARCHIVE };
+//cvar_t	sv_altweapons	= {"sv_altweapons", "0", FCVAR_ARCHIVE };
+// moved from server
+	CVAR_CREATE( "sv_handstyle", "0", FCVAR_ARCHIVE );
+	CVAR_CREATE( "sv_nightvision", "0", FCVAR_ARCHIVE );
+	CVAR_CREATE( "sv_altweapons", "0", FCVAR_ARCHIVE );
+	CVAR_CREATE( "hud_altfont", "0", FCVAR_ARCHIVE );	// scrama: sprite font
 
 	m_iFlags |= HUD_ACTIVE; //!!!
 
@@ -304,7 +315,9 @@ void CHudAmmo::Reset(void)
 	m_iFlags |= HUD_ACTIVE; //!!!
 
 	gpActiveSel = NULL;
-	gHUD.m_iHideHUDDisplay = 0;
+	
+	//g-cont. no need anymore
+	//gHUD.m_iHideHUDDisplay = 0;
 
 	gWR.Reset();
 	gHR.Reset();
@@ -427,17 +440,13 @@ void WeaponsResource :: SelectSlot( int iSlot, int fAdvance, int iDirection )
 		return;
 	}
 
-	if ( iSlot > MAX_WEAPON_SLOTS )
-		return;
+	if ( iSlot > MAX_WEAPON_SLOTS ) return;
 
 	if ( gHUD.m_fPlayerDead || gHUD.m_iHideHUDDisplay & ( HIDEHUD_WEAPONS | HIDEHUD_ALL ) )
 		return;
 
-	if (!(gHUD.m_iWeaponBits & (1<<(WEAPON_SUIT)) ))
-		return;
-
-	if ( ! ( gHUD.m_iWeaponBits & ~(1<<(WEAPON_SUIT)) ))
-		return;
+	if (!(gHUD.m_iHideHUDDisplay & ITEM_SUIT )) return;
+	if (!gHUD.m_iWeaponBits) return;
 
 	WEAPON *p = NULL;
 	bool fastSwitch = CVAR_GET_FLOAT( "hud_fastswitch" ) != 0;
@@ -457,7 +466,25 @@ void WeaponsResource :: SelectSlot( int iSlot, int fAdvance, int iDirection )
 				ServerCmd( p->szName );
 				g_weaponselect = p->iId;
 				return;
+			} // #SWITCH# here
+			else// cycle weaponswitch
+			{
+					if (gpCurWeapon ->iSlot == iSlot)
+					{
+						p = GetNextActivePos( gpCurWeapon->iSlot, gpCurWeapon->iSlotPos );
+						if ( !p ) p = GetFirstPos( gpCurWeapon->iSlot );
+						ServerCmd( p->szName );
+						g_weaponselect = p->iId;
+						return;
+					}
+					else
+					{
+						ServerCmd( p->szName );
+						g_weaponselect = p->iId;
+						return;
+					}
 			}
+			
 		}
 	}
 	else
@@ -543,7 +570,7 @@ int CHudAmmo::MsgFunc_HideWeapon( const char *pszName, int iSize, void *pbuf )
 	gHUD.m_iHideHUDDisplay = READ_BYTE();
 
 	//LRCT - experiment to allow a custom crosshair.
-	if ( gHUD.m_iHideHUDDisplay & HIDEHUD_CUSTOMCROSSHAIR )
+	if ( gHUD.m_iHideHUDDisplay & HIDEHUD_CROSSHAIR )
 	{
 		WEAPON *pWeapon = gWR.GetWeapon(4);
 		if ( pWeapon )
@@ -623,9 +650,10 @@ int CHudAmmo::MsgFunc_CurWeapon(const char *pszName, int iSize, void *pbuf )
 		return 1;
 
 	m_pWeapon = pWeapon;
+	gpCurWeapon = pWeapon;
 
 	//LRCT - probably not the right way to do this...
-	if ( gHUD.m_iHideHUDDisplay & ( HIDEHUD_CUSTOMCROSSHAIR ))
+	if ( gHUD.m_iHideHUDDisplay & ( HIDEHUD_CROSSHAIR ))
 	{
 		WEAPON *ccWeapon = gWR.GetWeapon(7);
 		SetCrosshair(ccWeapon->hCrosshair, ccWeapon->rcCrosshair, 255, 255, 255);
@@ -856,7 +884,7 @@ int CHudAmmo::Draw(float flTime)
 	int a, x, y, r, g, b;
 	int AmmoWidth;
 
-	if (!(gHUD.m_iWeaponBits & (1<<(WEAPON_SUIT)) ))
+	if (!(gHUD.m_iHideHUDDisplay & ITEM_SUIT ))
 		return 1;
 
 	if ( (gHUD.m_iHideHUDDisplay & ( HIDEHUD_WEAPONS | HIDEHUD_ALL )) )

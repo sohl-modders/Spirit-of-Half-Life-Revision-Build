@@ -190,15 +190,16 @@ class CItemSuit : public CItem
 			return FALSE;
 		}
 
-		if ( pPlayer->pev->weapons & (1<<WEAPON_SUIT) )
+		if ( pPlayer->m_iHideHUD & ITEM_SUIT )
 			return FALSE;
 
-		if ( pev->spawnflags & SF_SUIT_SHORTLOGON )
-			EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_A0");		// short version of suit logon,
-		else
-			EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_AAx");	// long version of suit logon
-
-		pPlayer->pev->weapons |= (1<<WEAPON_SUIT);
+		if(!gEvilImpulse101)//g-cont. do not play logon sentence at evil impulse
+		{
+			if ( pev->spawnflags & SF_SUIT_SHORTLOGON )
+				EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_A0"); // short version of suit logon,
+			else EMIT_SOUND_SUIT(pPlayer->edict(), "!HEV_AAx"); // long version of suit logon
+                    }
+		pPlayer->m_iHideHUD |= ITEM_SUIT;
 		return TRUE;
 	}
 };
@@ -237,39 +238,38 @@ class CItemBattery : public CItem
 			return FALSE;
 		}
 
-		if ((pPlayer->pev->armorvalue < MAX_NORMAL_BATTERY) &&
-			(pPlayer->pev->weapons & (1<<WEAPON_SUIT)))
+		float armor = 0;
+		if (pev->armorvalue) armor = pev->armorvalue;
+		else armor = gSkillData.batteryCapacity;
+                    
+		if (pPlayer->TakeArmor( armor ))
 		{
 			int pct;
 			char szcharge[64];
 
-			if (pev->armorvalue)
-				pPlayer->pev->armorvalue += pev->armorvalue;
-			else
-				pPlayer->pev->armorvalue += gSkillData.batteryCapacity;
-			pPlayer->pev->armorvalue = min(pPlayer->pev->armorvalue, MAX_NORMAL_BATTERY);
 
-			if (pev->noise)
-				EMIT_SOUND( pPlayer->edict(), CHAN_ITEM, STRING(pev->noise), 1, ATTN_NORM ); //LRC
-			else
-				EMIT_SOUND( pPlayer->edict(), CHAN_ITEM, "items/gunpickup2.wav", 1, ATTN_NORM );
+			if (pev->noise) EMIT_SOUND( pPlayer->edict(), CHAN_ITEM, STRING(pev->noise), 1, ATTN_NORM ); //LRC
+			else EMIT_SOUND( pPlayer->edict(), CHAN_ITEM, "items/gunpickup2.wav", 1, ATTN_NORM );
 
 			MESSAGE_BEGIN( MSG_ONE, gmsgItemPickup, NULL, pPlayer->pev );
 				WRITE_STRING( STRING(pev->classname) );
 			MESSAGE_END();
 
 			
-			// Suit reports new power level
-			// For some reason this wasn't working in release build -- round it.
-			pct = (int)( (float)(pPlayer->pev->armorvalue * 100.0) * (1.0/MAX_NORMAL_BATTERY) + 0.5);
-			pct = (pct / 5);
-			if (pct > 0)
-				pct--;
+			if(!gEvilImpulse101)
+			{
+				// Suit reports new power level
+				// For some reason this wasn't working in release build -- round it.
+				pct = (int)( (float)(pPlayer->pev->armorvalue * 100.0) * (1.0/MAX_NORMAL_BATTERY) + 0.5);
+				pct = (pct / 5);
+				if (pct > 0) pct--;
 		
-			sprintf( szcharge,"!HEV_%1dP", pct );
+				sprintf( szcharge,"!HEV_%1dP", pct );
 			
-			//EMIT_SOUND_SUIT(ENT(pev), szcharge);
-			pPlayer->SetSuitUpdate(szcharge, FALSE, SUIT_NEXT_IN_30SEC);
+				//EMIT_SOUND_SUIT(ENT(pev), szcharge);
+				pPlayer->SetSuitUpdate(szcharge, FALSE, SUIT_NEXT_IN_30SEC);
+			}
+			
 			return TRUE;		
 		}
 		return FALSE;
@@ -343,7 +343,7 @@ class CItemLongJump : public CItem
 			return FALSE;
 		}
 
-		if ( ( pPlayer->pev->weapons & (1<<WEAPON_SUIT) ) )
+		if (pPlayer->m_iHideHUD & ITEM_SUIT)
 		{
 			pPlayer->m_fLongJump = TRUE;// player now has longjump module
 
@@ -353,7 +353,8 @@ class CItemLongJump : public CItem
 				WRITE_STRING( STRING(pev->classname) );
 			MESSAGE_END();
 
-			EMIT_SOUND_SUIT( pPlayer->edict(), "!HEV_A1" );	// Play the longjump sound UNDONE: Kelly? correct sound?
+			if(!gEvilImpulse101)  // Play the longjump sound UNDONE: Kelly? correct sound?
+				EMIT_SOUND_SUIT( pPlayer->edict(), "!HEV_A1" );
 			return TRUE;		
 		}
 		return FALSE;

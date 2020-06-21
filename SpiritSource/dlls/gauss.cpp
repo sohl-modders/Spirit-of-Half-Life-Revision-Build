@@ -115,12 +115,12 @@ BOOL CGauss::Deploy( )
 {
 	AnimRestore = TRUE;
 	m_flShockTime = 0;
-	return DefaultDeploy( "models/v_gauss.mdl", "models/p_gauss.mdl", GAUSS_DRAW, "gauss", 0.6 );
+	return DefaultDeploy( "models/v_gauss.mdl", "models/p_gauss.mdl", GAUSS_DRAW, "gauss", 1 );
 }
 
 void CGauss::Holster( )
 {
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1;
 	SendWeaponAnim( GAUSS_HOLSTER );
 	m_fInAttack = 0;
 	m_iChargeLevel = 0;

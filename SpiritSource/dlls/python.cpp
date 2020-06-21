@@ -100,14 +100,16 @@ void CPython::Precache( void )
 BOOL CPython::Deploy( )
 {
 	if ( IsMultiplayer() ) m_iBody = 1;//enable laser sight geometry
-	return DefaultDeploy( "models/v_357.mdl", "models/p_357.mdl", PYTHON_DRAW, "python", 0.7 );
+//	return DefaultDeploy( "models/v_357.mdl", "models/p_357.mdl", PYTHON_DRAW, "python", 0.7 );
+//	scrama
+	return DefaultDeploy( "models/v_357.mdl", "models/p_357.mdl", PYTHON_DRAW, "python");
 }
 
 
 void CPython::Holster( )
 {
 	m_fInReload = FALSE;// cancel any reload in progress.
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.6;
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 
 	SendWeaponAnim( PYTHON_HOLSTER );
 

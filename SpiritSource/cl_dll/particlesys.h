@@ -1,6 +1,8 @@
 // 02/08/02 November235: Particle System
 #pragma once
 
+struct cl_entity_s *GetEntity( int idx );
+
 class ParticleType;
 class ParticleSystem;
 
@@ -152,7 +154,7 @@ public:
 	ParticleType *AddPlaceholderType( const char *szName );
 	ParticleType *ParseType( char *&szFile );
 
-	cl_entity_t *GetEntity() { return gEngfuncs.GetEntityByIndex(m_iEntIndex); }
+	cl_entity_t *GetEntity() { return ::GetEntity( m_iEntIndex ); }//g-cont. get right index
 
 	static float c_fCosTable[360 + 90];
 	static bool c_bCosTableInit;

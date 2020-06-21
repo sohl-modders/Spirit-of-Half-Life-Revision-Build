@@ -35,7 +35,19 @@ Return's the requested cl_entity_t
 */
 struct cl_entity_s *GetEntity( int idx )
 {
-	return gEngfuncs.GetEntityByIndex( idx );
+	cl_entity_t *e;
+
+	for (int ic = 1; ic < 1024; ic++ )
+	{
+		e = gEngfuncs.GetEntityByIndex( ic );
+		if (!e) break;
+
+		if (!e->model) continue;
+
+		if (e->curstate.colormap == idx )
+			return e;
+	}
+	return NULL;
 }
 
 /*

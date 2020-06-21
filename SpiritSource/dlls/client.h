@@ -61,5 +61,6 @@ extern void	CreateInstancedBaselines ( void );
 extern int	InconsistentFile( const edict_t *player, const char *filename, char *disconnect_message );
 
 extern int AllowLagCompensation( void );
+extern int g_serveractive;
 
 #endif		// CLIENT_H

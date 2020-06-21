@@ -52,6 +52,7 @@ extern "C"
 {
 
 // HLDM
+void EV_FireNull(event_args_t *args);
 void EV_FireCrowbar(struct event_args_s *args);
 void EV_FireGlock1( struct event_args_s *args  );
 void EV_FireMP5( struct event_args_s *args  );
@@ -413,7 +414,8 @@ void EV_HLDM_CrowbarDecalTrace(pmtrace_t *pTrace, char *decalName )
 	physent_t *pe;
 
 	pe = gEngfuncs.pEventAPI->EV_GetPhysent( pTrace->ent );
-
+	if(!pe) return; //g-cont. fix old bug that crashes Spirit
+          
 	struct model_s *mdl = pe->model;
 
 	// Only decal brush models such as the world etc.
@@ -1791,6 +1793,16 @@ void EV_SnarkFire( event_args_t *args )
 //	   SQUEAK END
 //======================
 
+//======================
+//	   NULL START
+//======================
+void EV_FireNull(event_args_t *args)
+{
+	CONPRINT("Fire Null!\n");
+}
+//======================
+//	   NULL END
+//======================
 void EV_TrainPitchAdjust( event_args_t *args )
 {
 	int idx;

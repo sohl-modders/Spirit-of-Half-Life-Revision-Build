@@ -522,16 +522,19 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 		{
 			cl_entity_t *viewentity;
 			viewentity = gEngfuncs.GetEntityByIndex( gHUD.viewEntityIndex );
-			studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
 			
 			if (viewentity)
 			{
-				if(gHUD.viewFlags & 8 && viewmonster)
+				if(gHUD.viewFlags & 8 )
 				{         //use monster eye position
 					CONPRINT("monster eyes\n");
-					pparams->vieworg[0] = viewmonster->eyeposition[0] + viewentity->origin[0];
-					pparams->vieworg[1] = viewmonster->eyeposition[1] + viewentity->origin[1];
-					pparams->vieworg[2] = viewmonster->eyeposition[2] + viewentity->origin[2];
+					studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
+					if( viewmonster )
+					{
+						pparams->vieworg[0] = viewmonster->eyeposition[0] + viewentity->origin[0];
+						pparams->vieworg[1] = viewmonster->eyeposition[1] + viewentity->origin[1];
+						pparams->vieworg[2] = viewmonster->eyeposition[2] + viewentity->origin[2];
+                                        	}
                                         }
                                         else
                                         {
@@ -856,16 +859,20 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	{
 		cl_entity_t *viewentity;
 		viewentity = gEngfuncs.GetEntityByIndex( gHUD.viewEntityIndex );
-		studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
 
 		if (viewentity)
 		{
-			if(gHUD.viewFlags & 8 && viewmonster)
-			{         //use monster eye position
+			if(gHUD.viewFlags & 8 )
+			{	
+				//use monster eye position
 				CONPRINT("monster eyes\n"); 
+				studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
+				if( viewmonster )
+				{
 					pparams->vieworg[0] = viewmonster->eyeposition[0] + viewentity->origin[0];
 					pparams->vieworg[1] = viewmonster->eyeposition[1] + viewentity->origin[1];
 					pparams->vieworg[2] = viewmonster->eyeposition[2] + viewentity->origin[2];
+                              	}
                               }
                               else
                               {
@@ -1707,14 +1714,17 @@ void V_CalcThirdPersonRefdef( struct ref_params_s * pparams )
 		{
 			cl_entity_t *viewentity;
 			viewentity = gEngfuncs.GetEntityByIndex( gHUD.viewEntityIndex );
-			studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
 			if (viewentity)
 			{
-				if(gHUD.viewFlags & 8 && viewmonster)
+				if(gHUD.viewFlags & 8 )
 				{         //use monster eye position
-					pparams->vieworg[0] = viewmonster->eyeposition[0];
-					pparams->vieworg[1] = viewmonster->eyeposition[1];
-					pparams->vieworg[2] = viewmonster->eyeposition[2];
+					studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
+					if( viewmonster )
+					{
+						pparams->vieworg[0] = viewmonster->eyeposition[0];
+						pparams->vieworg[1] = viewmonster->eyeposition[1];
+						pparams->vieworg[2] = viewmonster->eyeposition[2];
+                                        	}
                                         }
                                         else
                                         {
@@ -1736,15 +1746,18 @@ void V_CalcThirdPersonRefdef( struct ref_params_s * pparams )
 	{
 		cl_entity_t *viewentity;
 		viewentity = gEngfuncs.GetEntityByIndex( gHUD.viewEntityIndex );
-		studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
 
 		if (viewentity)
 		{
-			if(gHUD.viewFlags & 8 && viewmonster)
+			if(gHUD.viewFlags & 8 )
 			{         //use monster eye position
-				pparams->vieworg[0] = viewentity->origin[0] + viewmonster->eyeposition[0];
-				pparams->vieworg[1] = viewentity->origin[1] + viewmonster->eyeposition[1];
-				pparams->vieworg[2] = viewentity->origin[2] + viewmonster->eyeposition[2];
+				studiohdr_t *viewmonster = (studiohdr_t *)IEngineStudio.Mod_Extradata (viewentity->model);
+				if( viewmonster )
+				{
+					pparams->vieworg[0] = viewentity->origin[0] + viewmonster->eyeposition[0];
+					pparams->vieworg[1] = viewentity->origin[1] + viewmonster->eyeposition[1];
+					pparams->vieworg[2] = viewentity->origin[2] + viewmonster->eyeposition[2];
+				}
 			}
                               else
                               {

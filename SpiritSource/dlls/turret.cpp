@@ -295,6 +295,9 @@ void CBaseTurret::Precache( )
 	PRECACHE_SOUND ("turret/tu_spindown.wav");
 	PRECACHE_SOUND ("turret/tu_search.wav");
 	PRECACHE_SOUND ("turret/tu_alert.wav");
+	PRECACHE_SOUND ("weapons/hks1.wav");
+	PRECACHE_SOUND ("weapons/hks2.wav");
+	PRECACHE_SOUND ("weapons/hks3.wav");
 }
 
 #define TURRET_GLOW_SPRITE "sprites/flare3.spr"
@@ -370,9 +373,6 @@ void CMiniTurret::Precache()
 		PRECACHE_MODEL((char*)STRING(pev->model)); //LRC
 	else
 		PRECACHE_MODEL ("models/miniturret.mdl");	
-	PRECACHE_SOUND("weapons/hks1.wav");
-	PRECACHE_SOUND("weapons/hks2.wav");
-	PRECACHE_SOUND("weapons/hks3.wav");
 }
 
 void CBaseTurret::Initialize(void)

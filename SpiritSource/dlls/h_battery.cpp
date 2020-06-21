@@ -26,6 +26,8 @@
 #include "saverestore.h"
 #include "skill.h"
 #include "gamerules.h"
+#include "player.h"
+#include "weapons.h"
 
 class CRecharge : public CBaseToggle
 {
@@ -123,14 +125,27 @@ void CRecharge::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE use
 		else if (m_iStyle <= -32) LIGHT_STYLE(-m_iStyle, "a");
 		Off();
 	}
-
+          
+          CBasePlayer *pPlayer = (CBasePlayer *)pActivator;
+	
 	// if the player doesn't have the suit, or there is no juice left, make the deny noise
-	if ((m_iJuice <= 0) || (!(pActivator->pev->weapons & (1<<WEAPON_SUIT))))
+	if ((m_iJuice <= 0) || (!(pPlayer->m_iHideHUD & ITEM_SUIT)))
 	{
 		if (m_flSoundTime <= gpGlobals->time)
 		{
 			m_flSoundTime = gpGlobals->time + 0.62;
 			EMIT_SOUND(ENT(pev), CHAN_ITEM, "items/suitchargeno1.wav", 0.85, ATTN_NORM );
+		}
+		return;
+	}
+
+	// scrama: altrules
+	if ( (pActivator->pev->armorvalue == MAX_NORMAL_BATTERY) && (CVAR_GET_FLOAT ( "sv_altweapons" )) )
+	{
+		if (m_flSoundTime <= gpGlobals->time)
+		{
+			m_flSoundTime = gpGlobals->time + 0.62;
+			EMIT_SOUND_DYN(ENT(pev), CHAN_ITEM, "items/suitchargeno1.wav", 0.85, ATTN_NORM, 0, PITCH_NORM+1 );
 		}
 		return;
 	}
@@ -169,13 +184,9 @@ void CRecharge::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE use
 
 
 	// charge the player
-	if (m_hActivator->pev->armorvalue < 100)
+	if (m_hActivator->TakeArmor( 1 ))
 	{
 		m_iJuice--;
-		m_hActivator->pev->armorvalue += 1;
-
-		if (m_hActivator->pev->armorvalue > 100)
-			m_hActivator->pev->armorvalue = 100;
 	}
 
 	// govern the rate of charge

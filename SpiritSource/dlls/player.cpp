@@ -426,7 +426,7 @@ void CBasePlayer :: DeathSound( void )
 
 	// play one of the suit death alarms
 	//LRC- if no suit, then no flatline sound. (unless it's a deathmatch.)
-	if ( !(pev->weapons & (1<<WEAPON_SUIT)) && !g_pGameRules->IsDeathmatch() )
+	if ( !(m_iHideHUD & ITEM_SUIT) && !g_pGameRules->IsDeathmatch() )
 		return;
 	EMIT_GROUPNAME_SUIT(ENT(pev), "HEV_DEAD");
 }
@@ -438,6 +438,19 @@ int CBasePlayer :: TakeHealth( float flHealth, int bitsDamageType )
 {
 	return CBaseMonster :: TakeHealth (flHealth, bitsDamageType);
 
+}
+
+int CBasePlayer :: TakeArmor( float flArmor )
+{
+	if(!(m_iHideHUD & ITEM_SUIT)) return 0;
+	
+	if(CBaseMonster::TakeArmor(flArmor ))
+	{
+		//force flashlight to charge
+		m_flFlashLightTime = FLASH_CHARGE_TIME + gpGlobals->time;
+		return 1;
+	}
+	return 0;
 }
 
 Vector CBasePlayer :: GetGunPosition( )
@@ -948,8 +961,7 @@ void CBasePlayer::RemoveItems( int iWeaponMask, int i9mm, int i357, int iBuck, i
 	CBasePlayerItem *pCurrentItem;
 
 	// hornetgun is outside the spawnflags Worldcraft can set - handle it seperately.
-	if (iHornet)
-		iWeaponMask |= 1<<WEAPON_HORNETGUN;
+	if (iHornet) iWeaponMask |= 1<<WEAPON_HORNETGUN;
 
 	RemoveAmmo("9mm", i9mm);
 	RemoveAmmo("357", i357);
@@ -1007,13 +1019,8 @@ void CBasePlayer::RemoveItems( int iWeaponMask, int i9mm, int i357, int iBuck, i
 		}
 	}
 
-	int suit = pev->weapons & 1<<WEAPON_SUIT;
-	pev->weapons &= ~(1<<WEAPON_SUIT);
-//	ALERT(at_console, "weapons was %d; ", pev->weapons);
+	pev->weapons &= ~(1<<MAX_WEAPONS);
 	pev->weapons &= iWeaponMask;
-//	ALERT(at_console, "now %d\n(Mask is %d)", pev->weapons, iWeaponMask);
-	if (suit && !(iWeaponMask & 1))
-		pev->weapons |= 1<<WEAPON_SUIT;
 
 	// are we dropping the active item?
 	if (m_pActiveItem && !(1<<m_pActiveItem->m_iId & iWeaponMask))
@@ -1119,7 +1126,8 @@ void CBasePlayer::Killed( entvars_t *pevAttacker, int iGib )
 		WRITE_BYTE(0);
 	MESSAGE_END();
 
-	UTIL_ScreenFade( this, Vector(128,0,0), 6, 15, 255, FFADE_OUT | FFADE_MODULATE | FFADE_STAYOUT );
+	//this will cause problems
+	//UTIL_ScreenFade( this, Vector(128,0,0), 6, 15, 255, FFADE_OUT | FFADE_MODULATE | FFADE_STAYOUT );
 
 	if ( ( pev->health < -40 && iGib != GIB_NEVER ) || iGib == GIB_ALWAYS )
 	{
@@ -2407,8 +2415,7 @@ void CBasePlayer::CheckSuitUpdate()
 	int isearch = m_iSuitPlayNext;
 
 	// Ignore suit updates if no suit
-	if ( !(pev->weapons & (1<<WEAPON_SUIT)) )
-		return;
+	if(!(m_iHideHUD & ITEM_SUIT)) return;
 
 	// if in range of radiation source, ping geiger counter
 	UpdateGeigerCounter();
@@ -2470,7 +2477,7 @@ void CBasePlayer::SetSuitUpdate(char *name, int fgroup, int iNoRepeatTime)
 
 
 	// Ignore suit updates if no suit
-	if ( !(pev->weapons & (1<<WEAPON_SUIT)) )
+	if ( !(m_iHideHUD & ITEM_SUIT) )
 		return;
 
 	if ( g_pGameRules->IsMultiplayer() )
@@ -2980,7 +2987,7 @@ void CBasePlayer::Spawn( void )
 	m_flNextAttack	= UTIL_WeaponTimeBase();
 	StartSneaking();
 
-	m_iFlashBattery = 99;
+	m_iFlashBattery = 0; //discharge flashlight at start
 	m_flFlashLightTime = 1; // force first message
 
 // dont let uninitialized value here hurt the player
@@ -3017,7 +3024,9 @@ void CBasePlayer::Spawn( void )
 	m_fWeapon = FALSE;
 	m_pClientActiveItem = NULL;
 	m_iClientBattery = -1;
-
+          m_iClientFlashState = -1;
+          m_iClientFlashlight = -1;
+	
 	// reset all ammo values to 0
 	for ( int i = 0; i < MAX_AMMO_SLOTS; i++ )
 	{
@@ -3064,7 +3073,9 @@ void CBasePlayer :: Precache( void )
 	m_bitsHUDDamage = -1;
 
 	m_iClientBattery = -1;
-
+	m_iClientFlashState = -1;
+	m_iClientFlashlight = -1;
+	
 	m_iTrain = TRAIN_NEW;
 
 	// Make sure any necessary user messages have been registered
@@ -3461,45 +3472,38 @@ CBaseEntity *FindEntityForward( CBaseEntity *pMe )
 
 BOOL CBasePlayer :: FlashlightIsOn( void )
 {
+// scrama: nightvision or flashlight
+	if (CVAR_GET_FLOAT("sv_nightvision"))
+		return FBitSet(pev->effects, EF_BRIGHTLIGHT);
 	return FBitSet(pev->effects, EF_DIMLIGHT);
 }
 
 
 void CBasePlayer :: FlashlightTurnOn( void )
 {
-	if ( !g_pGameRules->FAllowFlashlight() )
-	{
-		return;
-	}
+	if ( !g_pGameRules->FAllowFlashlight()) return;
 
-	if ( (pev->weapons & (1<<WEAPON_SUIT)) )
+	if ( m_iHideHUD & ITEM_SUIT )
 	{
 		EMIT_SOUND_DYN( ENT(pev), CHAN_WEAPON, SOUND_FLASHLIGHT_ON, 1.0, ATTN_NORM, 0, PITCH_NORM );
-		SetBits(pev->effects, EF_DIMLIGHT);
-		MESSAGE_BEGIN( MSG_ONE, gmsgFlashlight, NULL, pev );
-		WRITE_BYTE(1);
-		WRITE_BYTE(m_iFlashBattery);
-		MESSAGE_END();
-
-		m_flFlashLightTime = FLASH_DRAIN_TIME + gpGlobals->time;
-
+		if(m_iFlashBattery)
+		{
+			if (CVAR_GET_FLOAT("sv_nightvision"))
+				SetBits(pev->effects, EF_BRIGHTLIGHT);
+			else
+				SetBits(pev->effects, EF_DIMLIGHT);
+		}
 	}
 }
 
 
 void CBasePlayer :: FlashlightTurnOff( void )
 {
-	if (FlashlightIsOn())
-		EMIT_SOUND_DYN( ENT(pev), CHAN_WEAPON, SOUND_FLASHLIGHT_OFF, 1.0, ATTN_NORM, 0, PITCH_NORM );
-
-    ClearBits(pev->effects, EF_DIMLIGHT);
-	MESSAGE_BEGIN( MSG_ONE, gmsgFlashlight, NULL, pev );
-		WRITE_BYTE(0);
-		WRITE_BYTE(m_iFlashBattery);
-	MESSAGE_END();
-
-
-	m_flFlashLightTime = FLASH_CHARGE_TIME + gpGlobals->time;
+	EMIT_SOUND_DYN( ENT(pev), CHAN_WEAPON, SOUND_FLASHLIGHT_OFF, 1.0, ATTN_NORM, 0, PITCH_NORM );
+	if (CVAR_GET_FLOAT("sv_nightvision"))
+		ClearBits(pev->effects, EF_BRIGHTLIGHT);
+	else
+		ClearBits(pev->effects, EF_DIMLIGHT);
 
 }
 
@@ -3516,6 +3520,9 @@ void CBasePlayer :: ForceClientDllUpdate( void )
 {
 	m_iClientHealth  = -1;
 	m_iClientBattery = -1;
+	m_iClientFlashState = -1;
+	m_iClientFlashlight = -1;
+	
 	m_iTrain |= TRAIN_NEW;  // Force new train message.
 	m_fWeapon = FALSE;          // Force weapon send
 	m_fKnownItem = FALSE;    // Force weaponinit messages.
@@ -3808,8 +3815,12 @@ void CBasePlayer::CheatImpulseCommands( int iImpulse )
 		pEntity = FindEntityForward( this );
 		if ( pEntity )
 		{
-			if ( pEntity->pev->takedamage )
+			UTIL_Remove (pEntity);
+			/*if ( pEntity->pev->takedamage )
+			{
 				pEntity->SetThink(&CBaseEntity::SUB_Remove);
+				pEntity->SetNextThink( 0 );	
+			}*/
 		}
 		break;
 	}
@@ -4104,6 +4115,27 @@ void CBasePlayer :: UpdateClientData( void )
 			}
 		}
 
+		//g-cont. found env sky and send message all players
+		CBaseEntity *pSky = UTIL_FindEntityByClassname( NULL, "env_sky" );
+		if(!FNullEnt(pSky))
+		{
+			MESSAGE_BEGIN(MSG_ONE, gmsgSetSky, NULL, pev );
+				WRITE_BYTE( 1 ); // mode
+				WRITE_COORD(pSky->pev->origin.x); // view position
+				WRITE_COORD(pSky->pev->origin.y);
+				WRITE_COORD(pSky->pev->origin.z);
+			MESSAGE_END();
+                                        
+			//g-cont. found all skyents
+			edict_t *pent = UTIL_EntitiesInPVS( pSky->edict() );
+			while ( !FNullEnt( pent ) )
+			{
+				//Msg("%s is Sky Entity\n", STRING(pent->v.classname ));
+				SetBits(pent->v.flags, FL_IMMUNE_WATER );//hack
+				pent = pent->v.chain;
+			}
+		}
+
 		//update all mirrors
 		edict_t *pFind; 
           	int numMirrors = 0;
@@ -4134,7 +4166,6 @@ void CBasePlayer :: UpdateClientData( void )
 		MESSAGE_BEGIN( MSG_ONE, gmsgHideWeapon, NULL, pev );
 			WRITE_BYTE( m_iHideHUD );
 		MESSAGE_END();
-
 		m_iClientHideHUD = m_iHideHUD;
 	}
 
@@ -4211,13 +4242,13 @@ void CBasePlayer :: UpdateClientData( void )
 
 	if (pev->armorvalue != m_iClientBattery)
 	{
-		m_iClientBattery = pev->armorvalue;
-
 		ASSERT( gmsgBattery > 0 );
 		// send "health" update message
 		MESSAGE_BEGIN( MSG_ONE, gmsgBattery, NULL, pev );
 			WRITE_SHORT( (int)pev->armorvalue);
 		MESSAGE_END();
+
+		m_iClientBattery = pev->armorvalue;
 	}
 
 	if (pev->dmg_take || pev->dmg_save || m_bitsHUDDamage != m_bitsDamageType)
@@ -4365,38 +4396,53 @@ void CBasePlayer :: UpdateClientData( void )
 
 		Rain_needsUpdate = 0;
 	}
-
+          
+	if(FlashlightIsOn() != m_iClientFlashState)
+	{
+		MESSAGE_BEGIN( MSG_ONE, gmsgFlashlight, NULL, pev );
+			WRITE_BYTE( FlashlightIsOn() );
+			WRITE_BYTE( m_iFlashBattery );
+		MESSAGE_END();
+          	
+          	m_iClientFlashState = FlashlightIsOn();
+          	m_flFlashLightTime = FLASH_DRAIN_TIME + gpGlobals->time;
+          }
+                                     
 	// Update Flashlight
-	if ((m_flFlashLightTime) && (m_flFlashLightTime <= gpGlobals->time))
+	if(m_flFlashLightTime && m_flFlashLightTime <= gpGlobals->time)
 	{
 		if (FlashlightIsOn())
 		{
-			if (m_iFlashBattery)
+			if (m_iFlashBattery )
 			{
-				m_flFlashLightTime = FLASH_DRAIN_TIME + gpGlobals->time;
 				m_iFlashBattery--;
-
-				if (!m_iFlashBattery)
-					FlashlightTurnOff();
+				if (!m_iFlashBattery) FlashlightTurnOff();
+				m_flFlashLightTime = FLASH_DRAIN_TIME + gpGlobals->time;
 			}
 		}
-		else
+		else if(pev->armorvalue > 1) 
 		{
-			if (m_iFlashBattery < 100)
+			if(m_iFlashBattery < 99 )
 			{
-				m_flFlashLightTime = FLASH_CHARGE_TIME + gpGlobals->time;
+				
 				m_iFlashBattery++;
+				pev->armorvalue -= (0.05 * gSkillData.flashlightCharge);//g-cont. scale factor
+				m_flFlashLightTime = FLASH_CHARGE_TIME + gpGlobals->time;
 			}
-			else
-				m_flFlashLightTime = 0;
+			
 		}
-
-		MESSAGE_BEGIN( MSG_ONE, gmsgFlashBattery, NULL, pev );
-		WRITE_BYTE(m_iFlashBattery);
-		MESSAGE_END();
+		else m_flFlashLightTime = 0;
 	}
 
-
+	if(m_iFlashBattery != m_iClientFlashlight)
+	{
+		m_iClientFlashlight = m_iFlashBattery;
+		
+		MESSAGE_BEGIN( MSG_ONE, gmsgFlashBattery, NULL, pev );
+			WRITE_BYTE(m_iFlashBattery);
+		MESSAGE_END();
+	}
+	
 	if (m_iTrain & TRAIN_NEW)
 	{
 		ASSERT( gmsgTrain > 0 );

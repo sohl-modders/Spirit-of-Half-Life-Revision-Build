@@ -62,7 +62,8 @@ void CShotgun::Spawn( )
 	Precache( );
 
 	SET_MODEL(ENT(pev), "models/w_shotgun.mdl");
-	m_iDefaultAmmo = SHOTGUN_DEFAULT_GIVE;
+	if ( CVAR_GET_FLOAT ("sv_altweapons") ) m_iDefaultAmmo = SHOTGUN_DEFAULT_ALTGIVE;
+	else m_iDefaultAmmo = SHOTGUN_DEFAULT_GIVE;
 	FallInit();// get ready to fall
 }
 
@@ -165,6 +166,7 @@ void CShotgun::PrimaryAttack()
 
 void CShotgun::SecondaryAttack( void )
 {
+	if ( CVAR_GET_FLOAT ("sv_altweapons") ) return;	// scrama: no secondary attack at altrules
 	// don't fire underwater
 	if (m_pPlayer->pev->waterlevel == 3 )
 	{

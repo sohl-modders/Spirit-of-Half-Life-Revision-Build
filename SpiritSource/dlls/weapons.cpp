@@ -46,9 +46,15 @@ DLL_GLOBAL	short    		g_sModelIndexWExplosion;// holds the index for the underwa
 DLL_GLOBAL	short		g_sModelIndexBubbles;// holds the index for the bubbles model
 DLL_GLOBAL	short		g_sModelIndexBloodDrop;// holds the sprite index for the initial blood
 DLL_GLOBAL	short		g_sModelIndexBloodSpray;// holds the sprite index for splattered blood
+DLL_GLOBAL	short		g_sModelIndexNullModel; //null model index
+DLL_GLOBAL	short		g_sModelIndexErrorModel;//error model index
+DLL_GLOBAL	short		g_sModelIndexNullSprite;//null sprite index
+DLL_GLOBAL	short		g_sModelIndexErrorSprite;//error sprite index
+DLL_GLOBAL	short		g_sSoundIndexNullSound;//null sound index
+DLL_GLOBAL	unsigned short	g_usEventIndexNullEvent;//null event index
 DLL_GLOBAL 	unsigned short 	m_usDecals;	//Decal event
-DLL_GLOBAL 	unsigned short 	m_usEfx;	//special effects event (rocket trail, explosion e.t.c.)	
-DLL_GLOBAL	unsigned short	m_usPlayEmptySound; //play empty sound on client side
+DLL_GLOBAL 	unsigned short 	m_usEfx;		//special effects event (rocket trail, explosion e.t.c.)	
+DLL_GLOBAL	unsigned short	m_usPlayEmptySound;	//play empty sound on client side
 
 ItemInfo CBasePlayerItem::ItemInfoArray[MAX_WEAPONS];
 AmmoInfo CBasePlayerItem::AmmoInfoArray[MAX_AMMO_SLOTS];
@@ -380,12 +386,20 @@ void UTIL_PrecacheOtherWeapon( const char *szClassname )
 	REMOVE_ENTITY(pent);
 }
 
-// called by worldspawn
+// called by worldspawn FIXME. Move this to client.cpp
 void W_Precache(void)
 {
 	memset( CBasePlayerItem::ItemInfoArray, 0, sizeof(CBasePlayerItem::ItemInfoArray) );
 	memset( CBasePlayerItem::AmmoInfoArray, 0, sizeof(CBasePlayerItem::AmmoInfoArray) );
 	giAmmoIndex = 0;
+
+	//g-cont. init safe precaching system
+	//WARNING!!! this is critical stuff! do not edit this
+	g_sSoundIndexNullSound = g_engfuncs.pfnPrecacheSound ("common/null.wav");
+	g_sModelIndexNullModel = g_engfuncs.pfnPrecacheModel ("models/null.mdl");
+	g_sModelIndexErrorModel = g_engfuncs.pfnPrecacheModel ("models/error.mdl");
+	g_sModelIndexNullSprite = g_engfuncs.pfnPrecacheModel ("sprites/null.spr");
+	g_sModelIndexErrorSprite = g_engfuncs.pfnPrecacheModel ("sprites/error.spr");
 
 	// custom items...
 
@@ -451,7 +465,7 @@ void W_Precache(void)
 	{
 		UTIL_PrecacheOther( "weaponbox" );// container for dropped deathmatch weapons
 	}
-
+	
 	g_sModelIndexFireball = PRECACHE_MODEL ("sprites/zerogxplode.spr");// fireball
 	g_sModelIndexWExplosion = PRECACHE_MODEL ("sprites/WXplo1.spr");// underwater fireball
 	g_sModelIndexSmoke = PRECACHE_MODEL ("sprites/steam1.spr");// smoke
@@ -1081,8 +1095,17 @@ BOOL CBasePlayerWeapon :: CanDeploy( void )
 
 BOOL CBasePlayerWeapon :: DefaultDeploy( char *szViewModel, char *szWeaponModel, int iAnim, char *szAnimExt, float fDrawTime )
 {
-	if ( SUIT ) pev->body = PlayerHasSuit = TRUE;
-	else  pev->body = PlayerHasSuit = FALSE;
+	if ( !CVAR_GET_FLOAT( "sv_handstyle" ) )
+	{
+		if ( SUIT ) pev->body = PlayerHasSuit = TRUE;
+		else  pev->body = PlayerHasSuit = FALSE;
+	}
+	else
+	{
+		if ( SUIT ) PlayerHasSuit = TRUE;
+		else  PlayerHasSuit = FALSE;
+		pev->body = CVAR_GET_FLOAT( "sv_handstyle" ) - 1;
+	}
 
 	if (IsMultiplayer() && !CanDeploy()) return FALSE;
 	m_iLastSkin = -1;//reset last skin info for new weapon

@@ -103,7 +103,7 @@ void CFuncWall :: Spawn( void )
 /*
 void CFuncWall :: PostSpawn (){					//AJH - Bug, this doesn't work, I have no idea why.
 	ALERT(at_debug,"DEBUG: Rotating from %f %f %f ", pev->angles.x,pev->angles.y,pev->angles.z);
-	//UTIL_SetAngles(this,pev->vuser1);
+	//UTIL_AssignAngles(this,pev->vuser1);
 	pev->angles = pev->vuser1;
 	ALERT(at_debug,"to %f %f %f\n",pev->angles.x,pev->angles.y,pev->angles.z);
 	ALERT(at_debug,"String vuser1 = %s\n",pev->vuser1);
@@ -509,6 +509,8 @@ void CFuncRotating :: Spawn( )
 	// if the designer didn't set a sound attenuation, default to one.
 	m_flAttenuation = ATTN_NORM;
 	
+	SetBits( m_iLFlags, LF_ANGULAR );//g-cont
+	
 	if ( FBitSet ( pev->spawnflags, SF_BRUSH_ROTATE_SMALLRADIUS) )
 	{
 		m_flAttenuation = ATTN_IDLE;
@@ -857,12 +859,21 @@ void CFuncRotating :: RotatingUse( CBaseEntity *pActivator, CBaseEntity *pCaller
 // RotatingBlocked - An entity has blocked the brush
 //
 void CFuncRotating :: Blocked( CBaseEntity *pOther )
-
 {
-	if (m_hActivator)
-		pOther->TakeDamage( pev, m_hActivator->pev, pev->dmg, DMG_CRUSH );	//AJH Attribute damage to he who switched me.
-	else
-		pOther->TakeDamage( pev, pev, pev->dmg, DMG_CRUSH );
+	//g-cont. simple recursive anouncer for parent system
+	//tell parent who blocked his
+	if(!FNullEnt(m_pMoveWith) && m_iLFlags & LF_PARENTMOVE) m_pMoveWith->Blocked( this );
+	if(!FNullEnt(m_pChildMoveWith))
+	{
+		if(m_pChildMoveWith	== pOther)
+		{
+			//ALERT(at_console, "I'am blocked by my child!\n");
+			Use( NULL, NULL, USE_OFF, 0 );
+		}
+	}
+	
+	if (m_hActivator) pOther->TakeDamage( pev, m_hActivator->pev, pev->dmg, DMG_CRUSH );	//AJH Attribute damage to he who switched me.
+	else pOther->TakeDamage( pev, pev, pev->dmg, DMG_CRUSH );
 }
 
 
@@ -961,7 +972,9 @@ void CPendulum :: Spawn( void )
 
 	if (pev->speed == 0)
 		pev->speed = 100;
-
+          
+          SetBits( m_iLFlags, LF_ANGULAR );//g-cont
+	
 	m_accel = (pev->speed * pev->speed) / (2 * fabs(m_distance));	// Calculate constant acceleration from speed and distance
 	m_maxSpeed = pev->speed;
 	m_start = pev->angles;
@@ -1020,7 +1033,7 @@ void CPendulum :: PendulumUse( CBaseEntity *pActivator, CBaseEntity *pCaller, US
 
 void CPendulum :: StopThink( void )
 {
-	UTIL_SetAngles(this, m_start); //LRC
+	UTIL_AssignAngles(this, m_start); //LRC
 	//pev->angles = m_start;
 	pev->speed = 0;
 	DontThink();
@@ -1031,6 +1044,17 @@ void CPendulum :: StopThink( void )
 
 void CPendulum::Blocked( CBaseEntity *pOther )
 {
+	//g-cont. simple recursive anouncer for parent system
+	//tell parent who blocked his
+	if(!FNullEnt(m_pMoveWith) && m_iLFlags & LF_PARENTMOVE) m_pMoveWith->Blocked( this );
+	if(!FNullEnt(m_pChildMoveWith))
+	{
+		if(m_pChildMoveWith	== pOther)
+		{
+			//ALERT(at_console, "I'am blocked by my child!\n");
+			Use( NULL, NULL, USE_OFF, 0 );
+		}
+	}
 	m_time = gpGlobals->time;
 }
 
@@ -1064,14 +1088,14 @@ void CPendulum :: SwingThink( void )
 	SetThink(&CPendulum ::SwingThink);
 
 //	if (m_pMoveWith) // correct MoveWith problems associated with fast-thinking entities
-//		UTIL_AssignOrigin(this, m_vecMoveWithOffset + m_pMoveWith->pev->origin);
+//		UTIL_AssignOrigin(this, m_vecOffsetOrigin + m_pMoveWith->pev->origin);
 
 	if ( m_damp )
 	{
 		m_dampSpeed -= m_damp * m_dampSpeed * dt;
 		if ( m_dampSpeed < 30.0 )
 		{
-			UTIL_SetAngles(this, m_center); //LRC
+			UTIL_AssignAngles(this, m_center); //LRC
 			//pev->angles = m_center;
 			pev->speed = 0;
 			ALERT(at_debug, "**CANCELLING pendulum think!\n");
