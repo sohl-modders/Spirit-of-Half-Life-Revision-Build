@@ -1,0 +1,13 @@
+game "SoHL: Revision Build"
+url_info "http://scrama.3dn.ru"
+version "1.5"
+size "35717120"
+hlversion "1120"
+type "single"
+startmap "RainDemo1"
+trainmap "SpiritDemo"
+mpentity "info_player_deathmatch"
+gamedll "dlls/spirit.dll"
+cldll "1"
+svonly "0"
+
