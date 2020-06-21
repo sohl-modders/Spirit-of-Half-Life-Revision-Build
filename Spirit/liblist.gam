@@ -1,0 +1,12 @@
+game "SoHL: Revision Build"
+url_info "http://scrama.3dn.ru"
+version "1.0"
+size "10078008"
+hlversion "1110"
+type "Toolkit"
+startmap "c0a0"
+trainmap "t0a0"
+mpentity "info_player_deathmatch"
+gamedll "cl_dlls/server.dll"
+cldll "1"
+
