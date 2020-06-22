@@ -1643,7 +1643,7 @@ void CFuncTankControls :: Use( CBaseEntity *pActivator, CBaseEntity *pCaller, US
 
 			//LRC - allow tank crosshairs
 			if (m_iCrosshair)
-				m_pController->m_iHideHUD |= ( HIDEHUD_CUSTOMCROSSHAIR | HIDEHUD_WEAPONS );
+				m_pController->m_iHideHUD |= ( HIDEHUD_CROSSHAIR | HIDEHUD_WEAPONS );
 			else
 				m_pController->m_iHideHUD |= HIDEHUD_WEAPONS;
 
@@ -1676,7 +1676,7 @@ void CFuncTankControls :: Use( CBaseEntity *pActivator, CBaseEntity *pCaller, US
 		if ( m_pController->m_pActiveItem )
 			m_pController->m_pActiveItem->Deploy();
 
-		m_pController->m_iHideHUD &= ~ (HIDEHUD_CUSTOMCROSSHAIR | HIDEHUD_WEAPONS);
+		m_pController->m_iHideHUD &= ~ (HIDEHUD_CROSSHAIR | HIDEHUD_WEAPONS);
 		m_pController->m_pTank = NULL;				
 
 		m_pController = NULL;

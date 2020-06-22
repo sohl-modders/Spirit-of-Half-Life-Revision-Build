@@ -54,6 +54,7 @@ private:
 };
 LINK_ENTITY_TO_CLASS( weapon_mp5, CMP5 );
 LINK_ENTITY_TO_CLASS( weapon_9mmAR, CMP5 );
+LINK_ENTITY_TO_CLASS( weapon_m4a1, CMP5 );
 
 
 int CMP5::SecondaryAmmoIndex( void )
@@ -66,7 +67,9 @@ void CMP5::Spawn( )
 	pev->classname = MAKE_STRING("weapon_9mmAR"); // hack to allow for old names
 	Precache( );
 	SET_MODEL(ENT(pev), "models/w_9mmAR.mdl");
-	m_iDefaultAmmo = MP5_DEFAULT_GIVE;
+	// scrama: altweapons
+	if (CVAR_GET_FLOAT("sv_altweapons") ) m_iDefaultAmmo = RANDOM_LONG (10, MP5_MAX_ALTCLIP);
+	else m_iDefaultAmmo = MP5_DEFAULT_GIVE;
 
 	FallInit();// get ready to fall down.
 }
@@ -87,11 +90,21 @@ void CMP5::Precache( void )
 int CMP5::GetItemInfo(ItemInfo *p)
 {
 	p->pszName = STRING(pev->classname);
-	p->pszAmmo1 = "9mm";
-	p->iMaxAmmo1 = _9MM_MAX_CARRY;
 	p->pszAmmo2 = "ARgrenades";
 	p->iMaxAmmo2 = M203_GRENADE_MAX_CARRY;
-	p->iMaxClip = MP5_MAX_CLIP;
+// scrama: altweapons
+	if ( CVAR_GET_FLOAT("sv_altweapons") )
+	{
+		p->pszAmmo1 = "5.56";
+		p->iMaxAmmo1 = _M4A1_MAX_CARRY;
+		p->iMaxClip = MP5_MAX_ALTCLIP;
+	}
+	else
+	{
+		p->iMaxClip = MP5_DEFAULT_GIVE;
+		p->pszAmmo1 = "9mm";
+		p->iMaxAmmo1 = _9MM_MAX_CARRY;
+	}
 	p->iSlot = 2;
 	p->iPosition = 0;
 	p->iFlags = 0;
@@ -103,7 +116,9 @@ int CMP5::GetItemInfo(ItemInfo *p)
 
 BOOL CMP5::Deploy( )
 {
-	return DefaultDeploy( "models/v_9mmAR.mdl", "models/p_9mmAR.mdl", MP5_DEPLOY, "mp5", 0.8 );
+//	return DefaultDeploy( "models/v_9mmAR.mdl", "models/p_9mmAR.mdl", MP5_DEPLOY, "mp5", 0.8 );
+// scrama
+	return DefaultDeploy( "models/v_9mmAR.mdl", "models/p_9mmAR.mdl", MP5_DEPLOY, "mp5");
 }
 
 void CMP5::Holster( )
@@ -187,7 +202,9 @@ void CMP5::SecondaryAttack( void )
 void CMP5::Reload( void )
 {
 	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 ) return;
-	DefaultReload( MP5_MAX_CLIP, MP5_RELOAD, 1.5 );
+// scrama: altweapons
+	if ( CVAR_GET_FLOAT("sv_altweapons") ) DefaultReload( MP5_MAX_ALTCLIP, MP5_RELOAD, 1.5 );
+	else DefaultReload( MP5_MAX_CLIP, MP5_RELOAD, 1.5 );
 }
 
 
@@ -226,7 +243,10 @@ class CMP5AmmoClip : public CBasePlayerAmmo
 	}
 	BOOL AddAmmo( CBaseEntity *pOther ) 
 	{ 
-		int bResult = (pOther->GiveAmmo( AMMO_MP5CLIP_GIVE, "9mm", _9MM_MAX_CARRY) != -1);
+// scrama: altweapons
+		int bResult;
+		if ( CVAR_GET_FLOAT("sv_altweapons") ) bResult = (pOther->GiveAmmo( AMMO_MP5CLIP_ALTGIVE, "5.56", _M4A1_MAX_CARRY) != -1);
+		else bResult = (pOther->GiveAmmo( AMMO_MP5CLIP_GIVE, "9mm", _9MM_MAX_CARRY) != -1);
 		if (bResult)
 		{
 			EMIT_SOUND(ENT(pev), CHAN_ITEM, "items/9mmclip1.wav", 1, ATTN_NORM);
@@ -236,6 +256,7 @@ class CMP5AmmoClip : public CBasePlayerAmmo
 };
 LINK_ENTITY_TO_CLASS( ammo_mp5clip, CMP5AmmoClip );
 LINK_ENTITY_TO_CLASS( ammo_9mmAR, CMP5AmmoClip );
+LINK_ENTITY_TO_CLASS( ammo_ARclip, CMP5AmmoClip );
 
 
 

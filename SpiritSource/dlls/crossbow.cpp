@@ -133,21 +133,22 @@ void CCrossbowBolt::BoltTouch( CBaseEntity *pOther )
 		EMIT_SOUND_DYN(ENT(pev), CHAN_BODY, "weapons/xbow_hit1.wav", RANDOM_FLOAT(0.95, 1.0), ATTN_NORM, 0, 98 + RANDOM_LONG(0,7));
 
 		SetThink(&CCrossbowBolt:: SUB_Remove );
-		SetNextThink( 0 );// this will get changed below if the bolt is allowed to stick in what it hit.
+		SetNextThink( 10 );// this will get changed below if the bolt is allowed to stick in what it hit.
 
-		if ( FClassnameIs( pOther->pev, "worldspawn" ) )
-		{
-			// if what we hit is static architecture, can stay around for a while.
-			Vector vecDir = pev->velocity.Normalize( );
-			UTIL_SetOrigin( this, pev->origin - vecDir * 12 );
-			pev->angles = UTIL_VecToAngles( vecDir );
-			pev->solid = SOLID_NOT;
-			pev->movetype = MOVETYPE_FLY;
-			pev->velocity = Vector( 0, 0, 0 );
-			pev->avelocity.z = 0;
-			pev->angles.z = RANDOM_LONG(0,360);
-			SetNextThink( 10.0 );
-		}
+		// if what we hit is static architecture, can stay around for a while.
+		Vector vecDir = pev->velocity.Normalize( );
+		UTIL_SetOrigin( this, pev->origin - vecDir * 12 );
+		pev->angles = UTIL_VecToAngles( vecDir );
+		pev->solid = SOLID_NOT;
+		pev->movetype = MOVETYPE_FLY;
+		pev->velocity = Vector( 0, 0, 0 );
+		pev->avelocity.z = 0;
+		pev->angles.z = RANDOM_LONG(0,360);
+
+		if( pOther->IsBSPModel())
+                    {
+                    	SetParent( pOther );//glue bolt with parent system
+                    }
 
 		if (UTIL_PointContents(pev->origin) != CONTENTS_WATER)
 		{
@@ -290,14 +291,14 @@ int CCrossbow::GetItemInfo(ItemInfo *p)
 BOOL CCrossbow::Deploy( )
 {
 	if (m_iClip)
-		return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW1, "bow" );
-	return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW2, "bow" );
+		return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW1, "bow", 0.8 );
+	return DefaultDeploy( "models/v_crossbow.mdl", "models/p_crossbow.mdl", CROSSBOW_DRAW2, "bow", 0.8 );
 }
 
 void CCrossbow::Holster( )
 {
 	m_fInReload = FALSE;// cancel any reload in progress.
-	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.8;
 	ZoomReset();
 
 	if (m_iClip) SendWeaponAnim( CROSSBOW_HOLSTER1 );

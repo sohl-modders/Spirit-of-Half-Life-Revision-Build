@@ -96,10 +96,7 @@ public:
 #define WEAPON_SNARK			16
 
 
-#define WEAPON_ALLWEAPONS		(~(1<<WEAPON_SUIT))
-
-#define WEAPON_SUIT				31	// ?????
-
+#define WEAPON_ALLWEAPONS			(1<<32)
 #define MAX_WEAPONS				32
 
 
@@ -125,6 +122,7 @@ public:
 // weapon clip/carry ammo capacities
 #define URANIUM_MAX_CARRY		100
 #define	_9MM_MAX_CARRY		250
+#define	_M4A1_MAX_CARRY		250
 #define _357_MAX_CARRY		36
 #define BUCKSHOT_MAX_CARRY		125
 #define BOLT_MAX_CARRY		50
@@ -141,8 +139,10 @@ public:
 
 //#define CROWBAR_MAX_CLIP		WEAPON_NOCLIP
 #define GLOCK_MAX_CLIP		17
+#define GLOCK_MAX_ALTCLIP	12
 #define PYTHON_MAX_CLIP		6
 #define MP5_MAX_CLIP		50
+#define MP5_MAX_ALTCLIP		30
 #define MP5_DEFAULT_AMMO		25
 #define SHOTGUN_MAX_CLIP		8
 #define CROSSBOW_MAX_CLIP		5
@@ -162,6 +162,7 @@ public:
 #define MP5_DEFAULT_AMMO		25
 #define MP5_M203_DEFAULT_GIVE		0
 #define SHOTGUN_DEFAULT_GIVE		12
+#define SHOTGUN_DEFAULT_ALTGIVE		8
 #define CROSSBOW_DEFAULT_GIVE		5
 #define RPG_DEFAULT_GIVE		1
 #define GAUSS_DEFAULT_GIVE		20
@@ -175,8 +176,10 @@ public:
 // The amount of ammo given to a player by an ammo item.
 #define AMMO_URANIUMBOX_GIVE	20
 #define AMMO_GLOCKCLIP_GIVE		GLOCK_MAX_CLIP
+#define AMMO_GLOCKCLIP_ALTGIVE	GLOCK_MAX_ALTCLIP
 #define AMMO_357BOX_GIVE		PYTHON_MAX_CLIP
 #define AMMO_MP5CLIP_GIVE		MP5_MAX_CLIP
+#define AMMO_MP5CLIP_ALTGIVE	MP5_MAX_ALTCLIP
 #define AMMO_CHAINBOX_GIVE		200
 #define AMMO_M203BOX_GIVE		2
 #define AMMO_BUCKSHOTBOX_GIVE	12
@@ -206,8 +209,8 @@ typedef	enum
 #define ITEM_FLAG_NOAUTOSWITCHEMPTY	4
 #define ITEM_FLAG_LIMITINWORLD		8
 #define ITEM_FLAG_EXHAUSTIBLE		16 // A player can totally exhaust their ammo supply and lose this weapon
-#define SUIT			m_pPlayer->pev->weapons & 1<<WEAPON_SUIT
-#define NUM_HANDS			2 //number of hands: barney and gordon
+#define SUIT			m_pPlayer->m_iHideHUD & ITEM_SUIT
+#define NUM_HANDS			3 //number of hands: barney, gordon, adrian
 
 
 #define WEAPON_IS_ONTARGET 0x40
@@ -420,6 +423,12 @@ extern DLL_GLOBAL	short		g_sModelIndexWExplosion;// holds the index for the unde
 extern DLL_GLOBAL	short    		g_sModelIndexBubbles;// holds the index for the bubbles model
 extern DLL_GLOBAL	short		g_sModelIndexBloodDrop;// holds the sprite index for blood drops
 extern DLL_GLOBAL	short		g_sModelIndexBloodSpray;// holds the sprite index for blood spray (bigger)
+extern DLL_GLOBAL	short		g_sModelIndexNullModel; //null model index
+extern DLL_GLOBAL	short		g_sModelIndexErrorModel;//error model index
+extern DLL_GLOBAL	short		g_sModelIndexNullSprite;//null sprite index
+extern DLL_GLOBAL	short		g_sModelIndexErrorSprite;//error sprite index
+extern DLL_GLOBAL	short		g_sSoundIndexNullSound;//null sound index
+extern DLL_GLOBAL	unsigned short	g_usEventIndexNullEvent;//null event index
 extern DLL_GLOBAL 	unsigned short 	m_usDecals;	    //Decal event
 extern DLL_GLOBAL 	unsigned short 	m_usEfx;	    //special effects event (rocket trail, explosion e.t.c.)
 

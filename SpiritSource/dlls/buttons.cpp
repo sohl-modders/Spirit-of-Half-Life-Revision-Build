@@ -25,7 +25,7 @@
 #include "cbase.h"
 #include "saverestore.h"
 #include "doors.h"
-
+#include "movewith.h"
 
 #define SF_BUTTON_DONTMOVE		1
 #define SF_ROTBUTTON_NOTSOLID	1
@@ -1215,7 +1215,9 @@ void CRotButton::Spawn( void )
 
 	m_fStayPushed = (m_flWait == -1 ? TRUE : FALSE);
 	m_fRotating = TRUE;
-
+          
+          SetBits( m_iLFlags, LF_ANGULAR );//g-cont
+	
 	// if the button is flagged for USE button activation only, take away it's touch function and add a use function
 	if ( !FBitSet ( pev->spawnflags, SF_BUTTON_TOUCH_ONLY ) )
 	{
@@ -1313,7 +1315,9 @@ void CMomentaryRotButton::Spawn( void )
 		m_end = pev->angles + pev->movedir * m_flMoveDistance;
 		m_direction = -1;		// This will toggle to +1 on the first use()
 	}
-
+          
+          SetBits( m_iLFlags, LF_ANGULAR );//g-cont
+	
 	if ( pev->spawnflags & SF_MOMENTARY_DOOR )
 		pev->solid		= SOLID_BSP;
 	else

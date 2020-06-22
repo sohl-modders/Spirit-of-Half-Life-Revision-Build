@@ -54,7 +54,7 @@ extern int gmsgHUDColor;
 extern int gmsgCamData; // for trigger_viewset
 
 extern int g_teamplay;
-
+DLL_GLOBAL int g_serveractive = 0;
 void LinkUserMessages( void );
 
 /*
@@ -586,8 +586,6 @@ void ClientUserInfoChanged( edict_t *pEntity, char *infobuffer )
 	g_pGameRules->ClientUserInfoChanged( GetClassPtr((CBasePlayer *)&pEntity->v), infobuffer );
 }
 
-static int g_serveractive = 0;
-
 void ServerDeactivate( void )
 {
 	// make sure they reinitialise the World in the next server
@@ -982,7 +980,7 @@ void SetupVisibility( edict_t *pViewEntity, edict_t *pClient, unsigned char **pv
 	}
 	// for trigger_viewset
 	CBasePlayer * pPlayer = (CBasePlayer *)CBaseEntity::Instance((struct edict_s *)pClient);
-	if (pPlayer->viewFlags & 1) // custom view active
+	if (pPlayer && pPlayer->viewFlags & 1) // custom view active
 	{
 		CBaseEntity *pViewEnt = UTIL_FindEntityByString( NULL, "targetname", STRING(pPlayer->viewEntity) );
 
@@ -1052,7 +1050,7 @@ int AddToFullPack( struct entity_state_s *state, int e, edict_t *ent, edict_t *h
 	{
 		if ( !ENGINE_CHECK_VISIBILITY( (const struct edict_s *)ent, pSet ) )
 		{
-			if ( ent->v.renderfx != kRenderFxEntInPVS )
+			if ( !(ent->v.flags & FL_IMMUNE_WATER) )//hack
                     	return 0;
 		}
 	}

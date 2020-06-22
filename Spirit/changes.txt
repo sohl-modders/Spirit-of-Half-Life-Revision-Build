@@ -1,0 +1,22 @@
+(русская версия внизу)
+CB 1.7 -> RB 1.0
+1. sv_handstyle		/ thanx to Xopyc for models /
+	0	sleeves/hev (depends on item_suit)
+	1	sleeves		BS
+	2	hev		HL
+	3	gloves		OF
+2. sv_nightvision
+	0	base flashlight
+	1	OF-like nightvision (there an ugly bug in MP, so don't use it)
+3. sv_altweapons
+	0	base HL weapons
+	1	9mmHandgun has 12 bullets per clip
+		AR has 30 bullets per clip, random amount of bullet in grabbed rifle
+		AR uses 5.56 ammo
+		Shotgun gives 8 shels instead of 12
+		no secondary shotgun attack
+4. hud_fastswitch
+	2	HL2- or Unreal2-like weapon switch
+5. hud_altfont
+	0	base wad font
+	1	font from sprites/font.spr - allows localization

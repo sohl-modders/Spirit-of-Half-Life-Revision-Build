@@ -22,20 +22,20 @@ typedef int BOOL;
 #define TRUE	 1	
 #define FALSE	0
 
+
+#pragma warning( disable : 4244 )
+
 // hack into header files that we can ship
 typedef int qboolean;
 typedef unsigned char byte;
-#include "../utils/common/mathlib.h"
+//#include "../utils/common/mathlib.h"
+#include "extdll.h"
 #include "const.h"
 #include "progdefs.h"
 #include "edict.h"
 #include "eiface.h"
-
 #include "studio.h"
-
-#ifndef ACTIVITY_H
-#include "activity.h"
-#endif
+#include "util.h"
 
 #include "activitymap.h"
 
@@ -47,14 +47,7 @@ typedef unsigned char byte;
 #include "scriptevent.h"
 #endif
 
-#ifndef ENGINECALLBACK_H
-#include "enginecallback.h"
-#endif
-
 extern globalvars_t				*gpGlobals;
-
-#pragma warning( disable : 4244 )
-
 
 
 int ExtractBbox( void *pmodel, int sequence, float *mins, float *maxs )
@@ -150,7 +143,7 @@ void GetEyePosition ( void *pmodel, float *vecEyePosition )
 		return;
 	}
 
-	VectorCopy ( pstudiohdr->eyeposition, vecEyePosition );
+	vecEyePosition = pstudiohdr->eyeposition;
 }
 
 int LookupSequence( void *pmodel, const char *label )

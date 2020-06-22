@@ -200,14 +200,27 @@ void CWallHealth::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE u
 		else if (m_iStyle <= -32) LIGHT_STYLE(-m_iStyle, "a");
 		Off();
 	}
-
+          
+          CBasePlayer *pPlayer = (CBasePlayer *)pActivator;
+	
 	// if the player doesn't have the suit, or there is no juice left, make the deny noise
-	if ((m_iJuice <= 0) || (!(pActivator->pev->weapons & (1<<WEAPON_SUIT))))
+	if ((m_iJuice <= 0) || (!(pPlayer->m_iHideHUD & ITEM_SUIT)))
 	{
 		if (m_flSoundTime <= gpGlobals->time)
 		{
 			m_flSoundTime = gpGlobals->time + 0.62;
 			EMIT_SOUND(ENT(pev), CHAN_ITEM, "items/medshotno1.wav", 1.0, ATTN_NORM );
+		}
+		return;
+	}
+
+	// scrama: altrules
+	if ( (pActivator->pev->health == 100) && (CVAR_GET_FLOAT ( "sv_altweapons" )) )
+	{
+		if (m_flSoundTime <= gpGlobals->time)
+		{
+			m_flSoundTime = gpGlobals->time + 0.62;
+			EMIT_SOUND_DYN(ENT(pev), CHAN_ITEM, "items/medshotno1.wav", 0.85, ATTN_NORM, 0, PITCH_NORM+1 );
 		}
 		return;
 	}

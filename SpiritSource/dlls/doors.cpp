@@ -86,6 +86,7 @@ public:
 
 	float   	m_fAcceleration;  
 	float	m_fDeceleration;
+	float	m_flBlockedTime;
 	BOOL	m_iSpeedMode;//AJH for changing door speeds
 };
 
@@ -931,32 +932,39 @@ void CBaseDoor::DoorHitBottom( void )
 
 void CBaseDoor::Blocked( CBaseEntity *pOther )
 {
-	CBaseEntity	*pTarget	= NULL;
-	CBaseDoor	*pDoor		= NULL;
+	//g-cont. simple recursive anouncer for parent system
+	//tell parent who blocked his
+	if(!FNullEnt(m_pMoveWith) && m_iLFlags & LF_PARENTMOVE) m_pMoveWith->Blocked( this );
+	if(!FNullEnt(m_pChildMoveWith))
+	{
+		if(m_pChildMoveWith	== pOther)
+		{
+			//ALERT(at_console, "I'am blocked by my child!\n");
+			Use( NULL, NULL, USE_OFF, 0 );
+		}
+	}
+	
+	UTIL_AssignOrigin(this, pev->origin);
+	//make delay before retouching
+	if ( gpGlobals->time < m_flBlockedTime) return;
+	m_flBlockedTime = gpGlobals->time + 0.5;
 
-//	ALERT(at_debug, "%s blocked\n", STRING(pev->targetname));
-
-	// Hurt the blocker a little.
-	if ( pev->dmg )
-		pOther->TakeDamage( pev, pev, pev->dmg, DMG_CRUSH );
-
-	// if a door has a negative wait, it would never come back if blocked,
-	// so let it just squash the object to death real fast
+	if ( pev->dmg ) pOther->TakeDamage( pev, pev, pev->dmg, DMG_CRUSH );
 
 	if (m_flWait >= 0)
 	{
-		//LRC - thanks to [insert name here] for this
 		if ( !FBitSet( pev->spawnflags, SF_DOOR_SILENT ) )
 			STOP_SOUND(ENT(pev), CHAN_STATIC, (char*)STRING(pev->noiseMoving) );
-		if (m_toggle_state == TS_GOING_DOWN)
-		{
-			DoorGoUp();
-		}
-		else
-		{
-			DoorGoDown();
-		}
+		if (m_toggle_state == TS_GOING_DOWN) DoorGoUp();
+		else DoorGoDown();
 	}
+          
+	//what the hell does this ?
+	//UTIL_SynchDoors( this );
+	SetNextThink( 0 );
+
+	CBaseEntity	*pTarget	= NULL;
+	CBaseDoor	*pDoor		= NULL;
 
 	// Block all door pieces with the same targetname here.
 	//LRC - in immediate mode don't do this, doors are expected to do it themselves.
@@ -969,31 +977,30 @@ void CBaseDoor::Blocked( CBaseEntity *pOther )
 			if ( !pTarget )
 				break;
 
-			if ( VARS( pTarget->pev ) != pev && FClassnameIs ( pTarget->pev, "func_door" ) ||
-						FClassnameIs ( pTarget->pev, "func_door_rotating" ) )
+			if ( pTarget != this )
 			{
 				pDoor = GetClassPtr( (CBaseDoor *) VARS(pTarget->pev) );
 				if ( pDoor->m_flWait >= 0)
 				{
 					// avelocity == velocity!? LRC
-					if (pDoor->pev->velocity == pev->velocity && pDoor->pev->avelocity == pev->velocity)
+					//g-cont. rewrote this hack. now is working correctly
+					if (pDoor->pev->velocity == pev->velocity && FClassnameIs ( pTarget->pev, "func_door" ))
 					{
 						// this is the most hacked, evil, bastardized thing I've ever seen. kjb
-						if ( FClassnameIs ( pTarget->pev, "func_door" ) )
-						{// set origin to realign normal doors
-							pDoor->pev->origin = pev->origin;
-							UTIL_SetVelocity(pDoor, g_vecZero);// stop!
-						}
-						else
-						{// set angles to realign rotating doors
-							pDoor->pev->angles = pev->angles;
-							UTIL_SetAvelocity(pDoor, g_vecZero);
-						}
+						pDoor->pev->origin = pev->origin;
+						UTIL_SetVelocity(pDoor, g_vecZero);// stop!
 					}
+					if (pDoor->pev->avelocity == pev->avelocity && FClassnameIs ( pTarget->pev, "func_door_rotating" ))
+					{
+						pDoor->pev->angles = pev->angles;
+						UTIL_SetAvelocity(pDoor, g_vecZero);
+					}
+					
+					if ( !FBitSet( pDoor->pev->spawnflags, SF_DOOR_SILENT ) )
+						STOP_SOUND(ENT(pDoor->pev), CHAN_STATIC, (char*)STRING(pDoor->pev->noiseMoving) );
 					if ( pDoor->m_toggle_state == TS_GOING_DOWN)
 						pDoor->DoorGoUp();
-					else
-						pDoor->DoorGoDown();
+					else pDoor->DoorGoDown();
 				}
 			}
 		}
@@ -1064,7 +1071,9 @@ void CRotDoor::Spawn( void )
 	//m_flWait			= 2; who the hell did this? (sjb)
 	m_vecAngle1	= pev->angles;
 	m_vecAngle2	= pev->angles + pev->movedir * m_flMoveDistance;
-
+          
+          SetBits( m_iLFlags, LF_ANGULAR );
+	
 	ASSERTSZ(m_vecAngle1 != m_vecAngle2, "rotating door start/end positions are equal");
 	
 	if ( FBitSet (pev->spawnflags, SF_DOOR_PASSABLE) )

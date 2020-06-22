@@ -62,7 +62,10 @@ void CGlock::Spawn( )
 	Precache( );
 	m_iId = WEAPON_GLOCK;
 	SET_MODEL(ENT(pev), "models/w_9mmhandgun.mdl");
-	m_iDefaultAmmo = GLOCK_DEFAULT_GIVE;
+// scrama: altweapons
+	if ( CVAR_GET_FLOAT("sv_altweapons") ) m_iDefaultAmmo = GLOCK_MAX_ALTCLIP;
+	else m_iDefaultAmmo = GLOCK_DEFAULT_GIVE;
+
 	FallInit();// get ready to fall down.
 }
 
@@ -97,7 +100,9 @@ int CGlock::GetItemInfo(ItemInfo *p)
 	p->iMaxAmmo1 = _9MM_MAX_CARRY;
 	p->pszAmmo2 = NULL;
 	p->iMaxAmmo2 = -1;
-	p->iMaxClip = GLOCK_MAX_CLIP;
+	// scrama: altweapons
+	if (CVAR_GET_FLOAT ("sv_altweapons") ) p->iMaxClip = GLOCK_MAX_ALTCLIP;
+	else p->iMaxClip = GLOCK_MAX_CLIP;
 	p->iSlot = 1;
 	p->iPosition = 0;
 	p->iFlags = 0;
@@ -109,7 +114,9 @@ int CGlock::GetItemInfo(ItemInfo *p)
 
 BOOL CGlock::Deploy( )
 {
-	return DefaultDeploy( "models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", GLOCK_DRAW, "onehanded", 0.8 );
+//	return DefaultDeploy( "models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", GLOCK_DRAW, "onehanded", 0.8 );
+// scrama wtf? why so long?
+	return DefaultDeploy( "models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", GLOCK_DRAW, "onehanded");
 }
 
 void CGlock::SecondaryAttack( void )
@@ -177,8 +184,17 @@ void CGlock::Reload( void )
 {
 	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0) return;
 
-	if (m_iClip == 0) DefaultReload( 17, GLOCK_RELOAD, 1.5 );
-	else	DefaultReload( 17, GLOCK_RELOAD_NOT_EMPTY, 1.5 );
+	// scrama: altweapons
+	if (CVAR_GET_FLOAT ("sv_altweapons") )
+	{
+		if (m_iClip == 0) DefaultReload( GLOCK_MAX_ALTCLIP, GLOCK_RELOAD, 1.5 );
+		else	DefaultReload( GLOCK_MAX_ALTCLIP, GLOCK_RELOAD_NOT_EMPTY, 1.5 );
+	}
+	else
+	{
+		if (m_iClip == 0) DefaultReload( GLOCK_MAX_CLIP, GLOCK_RELOAD, 1.5 );
+		else	DefaultReload( GLOCK_MAX_CLIP, GLOCK_RELOAD_NOT_EMPTY, 1.5 );
+	}
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + RANDOM_FLOAT ( 10, 15 );
 }
 
@@ -246,12 +262,15 @@ class CGlockAmmo : public CBasePlayerAmmo
 	}
 	BOOL AddAmmo( CBaseEntity *pOther ) 
 	{ 
-		if (pOther->GiveAmmo( AMMO_GLOCKCLIP_GIVE, "9mm", _9MM_MAX_CARRY ) != -1)
+		// scrama: altweapons
+		int bResult;
+		if (CVAR_GET_FLOAT ("sv_altweapons") ) bResult = (pOther->GiveAmmo( AMMO_GLOCKCLIP_ALTGIVE, "9mm", _9MM_MAX_CARRY ) != -1);
+		else bResult = (pOther->GiveAmmo( AMMO_GLOCKCLIP_GIVE, "9mm", _9MM_MAX_CARRY ) != -1);
+		if (bResult)
 		{
 			EMIT_SOUND(ENT(pev), CHAN_ITEM, "items/9mmclip1.wav", 1, ATTN_NORM);
-			return TRUE;
 		}
-		return FALSE;
+		return bResult;
 	}
 };
 LINK_ENTITY_TO_CLASS( ammo_glockclip, CGlockAmmo );

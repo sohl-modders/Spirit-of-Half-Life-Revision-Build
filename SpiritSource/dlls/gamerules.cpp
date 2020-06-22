@@ -287,14 +287,14 @@ void CGameRules::RefreshSkillData ( void )
 // via SKILLS.CFG. Any player hivehand tuning must take place in the code. (sjb)
 	gSkillData.plrDmgHornet = 7;
 
-
 	// HEALTH/CHARGE
 	gSkillData.suitchargerCapacity = GetSkillCvar( "sk_suitcharger" );
 	gSkillData.batteryCapacity = GetSkillCvar( "sk_battery" );
 	gSkillData.healthchargerCapacity = GetSkillCvar ( "sk_healthcharger" );
 	gSkillData.healthkitCapacity = GetSkillCvar ( "sk_healthkit" );
 	gSkillData.scientistHeal = GetSkillCvar ( "sk_scientist_heal" );
-
+          gSkillData.flashlightCharge = GetSkillCvar ( "sk_flashcharge" );
+	
 	// monster damage adj
 	gSkillData.monHead = GetSkillCvar( "sk_monster_head" );
 	gSkillData.monChest = GetSkillCvar( "sk_monster_chest" );

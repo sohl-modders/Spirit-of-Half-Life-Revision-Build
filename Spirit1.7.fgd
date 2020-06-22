@@ -1,6 +1,6 @@
-// Spirit of Half-Life v1.5 FGD
+// Spirit of Half-Life v1.7 FGD
 // For WorldCraft 3.5+ and Half-Life 1.1.0.8+
-// Last update: 4th August 2004
+// Last update: 29th October 2007
 // Created by Laurie Cheers	 	- http://www.bearkey.com/?laurie
 // Additions by Shambler Team 		- http://shamteam.cbi.ru/
 // Additions by Killar			- http://www.bearkey.com/?killar
@@ -8,6 +8,7 @@
 // Additions by Mike			- http://www.bearkey.com/?mike2k
 // Additions by ytiAdmin		- http://www.bearkey.com/?ytiadmin
 // Additions by DeathWish		- http://www.bearkey.com/?deathwish
+// Additions by Scrama			- http://scrama.3dn.ru
 
 @SolidClass = worldspawn : "World entity"
 [
@@ -1839,21 +1840,21 @@
 [
 	_minlight(string) : "Minimum light level"
 ]
-@SolidClass base(Targetname, MoveWith, RenderFields, ZHLTLightKeys) = func_illusionary : "Fake Wall/Light"
-[
-	skin(choices) : "Contents" : -1 =
-	[
-		-1: "Empty"
-		-7: "Volumetric Light"
-		-17:"Zero-G"
-		-18:"Hover-Field"
-		-19:"Fog effect"
-		-20:"Special 1 (Particles)"
-		-21:"Special 2 (Particles)"
-		-22:"Special 3 (Particles)"
-	]
-	_minlight(string) : "Minimum light level"
-]
+//@SolidClass base(Targetname, MoveWith, RenderFields, ZHLTLightKeys) = func_illusionary : "Fake Wall/Light"
+//[
+//	skin(choices) : "Contents" : -1 =
+//	[
+//		-1: "Empty"
+//		-7: "Volumetric Light"
+//		-17:"Zero-G"
+//		-18:"Hover-Field"
+//		-19:"Fog effect"
+//		-20:"Special 1 (Particles)"
+//		-21:"Special 2 (Particles)"
+//		-22:"Special 3 (Particles)"
+//	]
+//	_minlight(string) : "Minimum light level"
+//]
 @SolidClass base(Targetname, MoveWith, RenderFields, ZHLTLightKeys) = func_ladder : "Ladder"
 [
 	spawnflags(flags) =
@@ -2107,12 +2108,17 @@
 @SolidClass base(Targetname, MoveWith, Appearflags, RenderFields, ZHLTLightKeys, SwitchTexLight, Global) = func_wall : "Wall"
 [
 	_minlight(string) : "Minimum light level"
+	spawnflags(flags) =
+	[
+		2 : "Not solid" : 0
+	]
 ]
 @SolidClass base(func_wall) = func_wall_toggle : "Toggleable geometry"
 [
 	spawnflags(flags) =
 	[
 		1 : "Starts Invisible" : 0
+		2 : "Not solid" : 0
 	]
 ]
 @SolidClass base(Targetname, Angles, Master, Door, LockSounds, MoveWith, RenderFields, ZHLTLightKeys, Global) = func_water : "Liquid"
@@ -2405,11 +2411,13 @@
 @PointClass size(-16 -16 0, 16 16 36) base(Weapon, Targetx) studio("models/w_medkit.mdl")= item_healthkit : "Small Health Kit" []
 @PointClass size(-16 -16 0, 16 16 36) base(Weapon, Targetx) studio("models/w_longjump.mdl")= item_longjump : "Longjump Module" []
 @PointClass size(-16 -16 0, 16 16 36) base(Weapon, Targetx) studio("models/w_security.mdl")= item_security : "Security card" []
-@PointClass size(-16 -16 0, 16 16 36) base(Weapon, Targetx) studio("models/w_suit.mdl")= item_suit : "HEV Suit"
+@PointClass size(-16 -16 0, 16 16 36) base(Weapon, Targetx) studio()= item_suit : "HEV Suit"
 [
+	model(studio) : "Model" : "models/w_suit.mdl"
 	spawnflags(Flags) =
 	[
 		1 : "Short Logon" : 0
+		2 : "Shut up!" : 0
 	]
 ]
 @PointClass iconsprite("sprites/lightbulb.spr") color(255 255 128) base(Light, ZhltLights) = light : "Invisible lightsource"
@@ -2621,7 +2629,7 @@
 ]
 @PointClass base(Monster) size(-16 -16 0, 16 16 36) studio("models/baby_headcrab.mdl") = monster_babycrab : "Baby Headcrab" []
 @PointClass base(Targetname, RenderFields) size(-16 -16 -36, 16 16 0) studio("models/barnacle.mdl") = monster_barnacle : "Barnacle Monster" []
-@PointClass base(Monster, TalkMonster) size(-16 -16 0, 16 16 72) studio("models/barney.mdl") = monster_barney : "Barney"
+@PointClass base(Monster, TalkMonster) size(-16 -16 0, 16 16 72) studio() = monster_barney : "Barney"
 [
 	frags(choices) : "Weapon" : 0 =
 	[
@@ -2707,6 +2715,7 @@
 		70 : "pepsi push"
 		71 : "push button"
 	]
+	model(studio) : "Model" : "models/barney.mdl"
 ]
 @PointClass base(Targetname, Angles, RenderFields, Appearflags) size(-16 -16 0, 16 16 72) = monster_barney_dead : "Dead Barney"
 [
@@ -2836,6 +2845,13 @@
 		32 : "SquadLeader" : 0
 		1024: "Don't Drop Gun" : 0
 	]
+	frags(choices) : "Blood color" : 0 =
+	[
+		0 : "Red Human"
+		1 : "Yellow Alien"
+		2 : "Green Zombie"
+		3 : "Don't bleed"
+	]
 	weapons(Choices) : "Weapons" : 1 =
 	[
 		1 : "9mmAR"
@@ -2955,8 +2971,9 @@
 ]
 @PointClass base(Monster) size(-6 -6 0, 6 6 6) studio("models/bigrat.mdl") = monster_rat : "Rat" []
 @PointClass base(Weapon,Targetx,RenderFields) studio("models/w_satchel.mdl") = monster_satchelcharge : "Live Satchel Charge" []
-@PointClass base(Monster, TalkMonster) size(-16 -16 0, 16 16 72) studio("models/scientist.mdl") = monster_scientist : "Scared Scientist"
+@PointClass base(Monster, TalkMonster) size(-16 -16 0, 16 16 72) studio() = monster_scientist : "Scared Scientist"
 [
+	model(studio): "Model" : "models/scientist.mdl"
       body(Choices) : "Body" : -1 =
 	[
 		-1: "Random"

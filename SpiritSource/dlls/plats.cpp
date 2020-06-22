@@ -578,6 +578,18 @@ void CFuncPlat :: HitTop( void )
 
 void CFuncPlat :: Blocked( CBaseEntity *pOther )
 {
+	//g-cont. simple recursive anouncer for parent system
+	//tell parent who blocked his
+	if(!FNullEnt(m_pMoveWith) && m_iLFlags & LF_PARENTMOVE) m_pMoveWith->Blocked( this );
+	if(!FNullEnt(m_pChildMoveWith))
+	{
+		if(m_pChildMoveWith	== pOther)
+		{
+			//ALERT(at_console, "I'am blocked by my child!\n");
+			Use( NULL, NULL, USE_OFF, 0 );
+		}
+	}
+	
 	ALERT( at_aiconsole, "%s Blocked by %s\n", STRING(pev->classname), STRING(pOther->pev->classname) );
 	// Hurt the blocker a little
 	if (m_hActivator)
@@ -656,7 +668,7 @@ void CFuncPlatRot :: SetupRotation( void )
 	}
 	if ( !FStringNull(pev->targetname) )	// Start at top
 	{
-		UTIL_SetAngles(this, m_end);
+		UTIL_AssignAngles(this, m_end);
 		//pev->angles = m_end;
 	}
 }
@@ -666,6 +678,7 @@ void CFuncPlatRot :: Spawn( void )
 {
 	CFuncPlat :: Spawn();
 	SetupRotation();
+	SetBits( m_iLFlags, LF_ANGULAR );//g-cont
 }
 
 void CFuncPlatRot :: GoDown( void )
@@ -695,7 +708,7 @@ void CFuncPlatRot :: HitBottom( void )
 	CFuncPlat :: HitBottom();
 	UTIL_SetAvelocity(this, g_vecZero);
 	//pev->avelocity = g_vecZero;
-	UTIL_SetAngles(this, m_start);
+	UTIL_AssignAngles(this, m_start);
 	//pev->angles = m_start;
 }
 
@@ -730,7 +743,7 @@ void CFuncPlatRot :: HitTop( void )
 	CFuncPlat :: HitTop();
 	UTIL_SetAvelocity(this, g_vecZero);
 	//pev->avelocity = g_vecZero;
-	UTIL_SetAngles(this, m_end);
+	UTIL_AssignAngles(this, m_end);
 	//pev->angles = m_end;
 }
 
@@ -833,6 +846,18 @@ void CFuncTrain :: KeyValue( KeyValueData *pkvd )
 
 void CFuncTrain :: Blocked( CBaseEntity *pOther )
 {
+	//g-cont. simple recursive anouncer for parent system
+	//tell parent who blocked his
+	if(!FNullEnt(m_pMoveWith) && m_iLFlags & LF_PARENTMOVE) m_pMoveWith->Blocked( this );
+	if(!FNullEnt(m_pChildMoveWith))
+	{
+		if(m_pChildMoveWith	== pOther)
+		{
+			//ALERT(at_console, "I'am blocked by my child!\n");
+			Use( NULL, NULL, USE_OFF, 0 );
+		}
+	}
+	
 	// Keep "movewith" entities in line
 	UTIL_AssignOrigin(this, pev->origin);
 
@@ -1040,7 +1065,7 @@ void CFuncTrain :: Next( void )
 
 		if (m_pevCurrentTarget->armorvalue)
 		{
-			UTIL_SetAngles(this, m_pevCurrentTarget->angles);
+			UTIL_AssignAngles(this, m_pevCurrentTarget->angles);
 			//pev->angles = m_pevCurrentTarget->angles; //LRC - if we just passed a "turn to face" corner, set angle exactly.
 		}
 	}
@@ -1070,7 +1095,7 @@ void CFuncTrain :: Next( void )
 
 		if (pTarg->pev->armorvalue) //LRC - "teleport and turn to face" means you set an angle as you teleport.
 		{
-			UTIL_SetAngles(this, pTarg->pev->angles);
+			UTIL_AssignAngles(this, pTarg->pev->angles);
 			//pev->angles = pTarg->pev->angles;
 		}
 
@@ -1095,7 +1120,7 @@ void CFuncTrain :: Next( void )
 		{
 			Vector vTemp = pev->angles;
 			FixupAngles( vTemp );
-			UTIL_SetAngles(this, vTemp);
+			UTIL_AssignAngles(this, vTemp);
 			Vector oDelta = pTarg->pev->origin - pev->origin;
 			Vector aDelta = pTarg->pev->angles - pev->angles;
 			float timeTaken = oDelta.Length() / pev->speed;
@@ -1379,6 +1404,8 @@ void CFuncTrackTrain :: Spawn( void )
 		pev->solid = SOLID_BSP;
 	pev->movetype = MOVETYPE_PUSH;
 	
+	SetBits( m_iLFlags, LF_ANGULAR );//g-cont
+	
 	SET_MODEL( ENT(pev), STRING(pev->model) );
 
 	UTIL_SetSize( pev, pev->mins, pev->maxs );
@@ -1521,6 +1548,18 @@ void CFuncTrackTrain :: NextThink( float thinkTime, BOOL alwaysThink )
 void CFuncTrackTrain :: Blocked( CBaseEntity *pOther )
 {
 	entvars_t	*pevOther = pOther->pev;
+
+	//g-cont. simple recursive anouncer for parent system
+	//tell parent who blocked his
+	if(!FNullEnt(m_pMoveWith) && m_iLFlags & LF_PARENTMOVE) m_pMoveWith->Blocked( this );
+	if(!FNullEnt(m_pChildMoveWith))
+	{
+		if(m_pChildMoveWith	== pOther)
+		{
+			//ALERT(at_console, "I'am blocked by my child!\n");
+			Use( NULL, NULL, USE_OFF, 0 );
+		}
+	}
 
 	// Blocker is on-ground on the train
 	if ( FBitSet( pevOther->flags, FL_ONGROUND ) && VARS(pevOther->groundentity) == pev )
@@ -1686,10 +1725,23 @@ void CFuncTrackTrain :: UpdateSound( void )
 	}
 }
 
+void CFuncTrackTrain::OverrideReset( void )
+{
+	NextThink( 0.1, FALSE );
+	SetThink(&CFuncTrackTrain:: NearestPath );
+}
+
+void CFuncTrackTrain :: ClearPointers( void )
+{
+	CBaseEntity :: ClearPointers();
+	m_ppath = NULL;
+}
+
 void CFuncTrackTrain :: PostponeNext( void )
 {
-	//UTIL_DesiredAction(this);
-	DesiredAction();  //this simply fix LAARGE BUG with func_traktrain in spirit ;) g-cont
+	//g-cont. well...
+	if(m_pAssistLink) UTIL_DesiredAction(this);
+	else DesiredAction();  //this simply fix LAARGE BUG with func_traktrain in spirit ;) g-cont
 }
 
 void CFuncTrackTrain :: DesiredAction( void ) // Next( void )
@@ -1819,7 +1871,7 @@ void CFuncTrackTrain :: DesiredAction( void ) // Next( void )
 			{
 				Vector vTemp = pFire->pev->angles;
 				vTemp.y -= 180; //the train is actually built facing west.
-				UTIL_SetAngles(this, vTemp);
+				UTIL_AssignAngles(this, vTemp);
 				//pev->angles = pFire->pev->angles;
 				//pev->angles.y -= 180; //the train is actually built facing west.
 			}
@@ -1899,7 +1951,7 @@ void CFuncTrackTrain :: DesiredAction( void ) // Next( void )
 				pev->spawnflags |= SF_TRACKTRAIN_AVELOCITY | SF_TRACKTRAIN_AVEL_GEARS;
 				Vector vTemp = pev->angles;
 				FixupAngles( vTemp );
-				UTIL_SetAngles(this, vTemp );
+				UTIL_AssignAngles(this, vTemp );
 				Vector oDelta = pDest->pev->origin - pev->origin;
 				Vector aDelta;
 				if (setting > 0)
@@ -2086,7 +2138,7 @@ void CFuncTrackTrain :: Find( void )
 		//pev->angles.x = 0;
 	}
 
-	UTIL_SetAngles(this, vTemp); //LRC
+	UTIL_AssignAngles(this, vTemp); //LRC
 
 	UTIL_AssignOrigin ( this, nextPos ); //LRC
 //	ALERT(at_console, "Train Find; origin %f %f %f\n", pev->origin.x, pev->origin.y, pev->origin.z);
@@ -2146,14 +2198,6 @@ void CFuncTrackTrain :: NearestPath( void )
 		SetThink(&CFuncTrackTrain :: PostponeNext );
 	}
 }
-
-
-void CFuncTrackTrain::OverrideReset( void )
-{
-	NextThink( 0.1, FALSE );
-	SetThink(&CFuncTrackTrain:: NearestPath );
-}
-
 
 CFuncTrackTrain *CFuncTrackTrain::Instance( edict_t *pent )
 { 

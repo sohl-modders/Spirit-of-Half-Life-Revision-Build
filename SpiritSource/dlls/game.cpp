@@ -23,6 +23,12 @@ cvar_t	displaysoundlist = {"displaysoundlist","0"};
 cvar_t	fragsleft	= {"mp_fragsleft","0", FCVAR_SERVER | FCVAR_UNLOGGED };	  // Don't spam console/log files/users with this changing
 cvar_t	timeleft	= {"mp_timeleft","0" , FCVAR_SERVER | FCVAR_UNLOGGED };	  // "      "
 
+// scrama: RB cvars
+//cvar_t	sv_handstyle	= {"sv_handstyle", "0", FCVAR_ARCHIVE };
+//cvar_t	sv_nightvision	= {"sv_nightvision", "0", FCVAR_ARCHIVE };
+//cvar_t	sv_altweapons	= {"sv_altweapons", "0", FCVAR_ARCHIVE };
+// moved to client
+
 // multiplayer server rules
 cvar_t	teamplay	= {"mp_teamplay","0", FCVAR_SERVER };
 cvar_t	fraglimit	= {"mp_fraglimit","0", FCVAR_SERVER };
@@ -408,6 +414,10 @@ cvar_t	sk_scientist_heal1	= { "sk_scientist_heal1","0" };
 cvar_t	sk_scientist_heal2	= { "sk_scientist_heal2","0" };	
 cvar_t	sk_scientist_heal3	= { "sk_scientist_heal3","0" };	
 
+// FLASHLIGHT CHARGE VALUE
+cvar_t	sk_flashcharge1	= { "sk_flashcharge1","0" };
+cvar_t	sk_flashcharge2	= { "sk_flashcharge2","0" };		
+cvar_t	sk_flashcharge3	= { "sk_flashcharge3","0" };
 
 // monster damage adjusters
 cvar_t	sk_monster_head1	= { "sk_monster_head1","2" };
@@ -464,6 +474,12 @@ void GameDLLInit( void )
 	g_footsteps = CVAR_GET_POINTER( "mp_footsteps" );
 
 	CVAR_REGISTER (&displaysoundlist);
+
+// scrama: RB cvars
+//	CVAR_REGISTER (&sv_handstyle);
+//	CVAR_REGISTER (&sv_nightvision);
+//	CVAR_REGISTER (&sv_altweapons);
+//
 
 	CVAR_REGISTER (&teamplay);
 	CVAR_REGISTER (&fraglimit);
@@ -847,7 +863,11 @@ void GameDLLInit( void )
 	CVAR_REGISTER ( &sk_scientist_heal1 );
 	CVAR_REGISTER ( &sk_scientist_heal2 );
 	CVAR_REGISTER ( &sk_scientist_heal3 );
-
+	
+	CVAR_REGISTER ( &sk_flashcharge1 );
+	CVAR_REGISTER ( &sk_flashcharge2 );
+	CVAR_REGISTER ( &sk_flashcharge3 );
+	
 // monster damage adjusters
 	CVAR_REGISTER ( &sk_monster_head1 );
 	CVAR_REGISTER ( &sk_monster_head2 );

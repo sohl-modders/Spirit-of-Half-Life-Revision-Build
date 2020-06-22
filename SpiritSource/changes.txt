@@ -1,0 +1,49 @@
+(русская версия внизу)
+CB 1.7 -> RB 1.0
+1. sv_handstyle		/ thanx to Xopyc for models /
+	0	sleeves/hev (depends on item_suit)
+	1	sleeves		BS
+	2	hev		HL
+	3	gloves		OF
+2. sv_nightvision
+	0	base flashlight
+	1	OF-like nightvision (there an ugly bug in MP, so don't use it)
+3. sv_altweapons
+	0	base HL weapons
+	1	9mmHandgun has 12 bullets per clip
+		AR has 30 bullets per clip
+		random amount of bullet in grabbed rifle
+		AR uses 5.56 ammo
+		Shotgun gives 8 shels instead of 12
+		no secondary shotgun attack
+4. hud_fastswitch
+	2	HL2- or Unreal2-like weapon switch
+5. hud_altfont
+	0	base wad font
+	1	font from sprites/font.spr - allows localization
+6. screenshake effect for explosions
+
+CB 1.7 -> RB 1.0
+1. sv_handstyle		/ Спасибо Хорусу за модельки/
+	0	рукава/костюм (зависит от наличия костюма)
+	1	рукова		BS
+	2	костюм		HL
+	3	перчатки	OF
+2. sv_nightvision
+	0	обычный фонарик
+	1	ночное видение как в OF, но глючит в мультиплеере.
+3. sv_altweapons
+	0	обычное оружие
+	1	в пситолете 12 патронов вместо 17
+		В винтовке 30 патронов вмесе 50
+		при подборе винтовки с пла - случайное число от 10 до 30 вместо 25
+		Винтовка стреляет отдельными патронами 5.56
+		В подобранном шотгане 8 зарядов, а не 12
+		и нет вторичной атаки
+4. hud_fastswitch
+	2	нормальное переключение оружия, как в HL2 или Unreal 2
+5. hud_altfont
+	0	старый шрифт
+	1	локализованный шрифт из спрайта font.spr
+6. эффект тряски экрана при взрывах
+

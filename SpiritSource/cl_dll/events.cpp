@@ -11,6 +11,7 @@
 
 extern "C"
 {
+	void EV_FireNull(event_args_t *args);
 	void EV_FireCrowbar(event_args_t *args);
 	void EV_PlayEmptySound( struct event_args_s *args );
 	void EV_FireGlock1( struct event_args_s *args  );
@@ -44,6 +45,7 @@ That was what we were going to do, but we ran out of time...oh well.
 
 void EV_HookEvents( void )
 {
+	gEngfuncs.pfnHookEvent( "events/null.sc",				EV_FireNull);
 	gEngfuncs.pfnHookEvent( "events/crowbar.sc",				EV_FireCrowbar);
 	gEngfuncs.pfnHookEvent( "events/tripfire.sc",				EV_PlayEmptySound );
 	gEngfuncs.pfnHookEvent( "events/glock1.sc",				EV_FireGlock1 );

@@ -205,7 +205,7 @@ int CHudHealth::Draw(float flTime)
 	ScaleColors(r, g, b, a );
 
 	// Only draw health if we have the suit.
-	if (gHUD.m_iWeaponBits & (1<<(WEAPON_SUIT)))
+	if (gHUD.m_iHideHUDDisplay & ITEM_SUIT )
 	{
 		HealthWidth = gHUD.GetSpriteRect(gHUD.m_HUD_number_0).right - gHUD.GetSpriteRect(gHUD.m_HUD_number_0).left;
 		int CrossWidth = gHUD.GetSpriteRect(m_HUD_cross).right - gHUD.GetSpriteRect(m_HUD_cross).left;
@@ -225,9 +225,8 @@ int CHudHealth::Draw(float flTime)
 		int iHeight = gHUD.m_iFontHeight;
 		int iWidth = HealthWidth/10;
 
-		UnpackRGB(r,g,b, gHUD.m_iHUDColor); //LRC
-		//LRC FillRGBA(x, y, iWidth, iHeight, 255, 160, 0, a);
-		FillRGBA(x, y, iWidth, iHeight, r, g, b, a); //LRC
+		UnpackRGB(r,g,b, gHUD.m_iHUDColor);
+		FillRGBA(x, y, iWidth, iHeight, r, g, b, a);
 	}
 
 	DrawDamage(flTime);

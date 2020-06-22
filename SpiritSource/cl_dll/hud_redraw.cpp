@@ -237,9 +237,11 @@ void ScaleColors( int &r, int &g, int &b, int a )
 int CHud :: DrawHudString(int xpos, int ypos, int iMaxX, char *szIt, int r, int g, int b )
 {
 	// draw the string until we hit the null character or a newline character
+	//ConsolePrint("DrawHudString\n");
 	for ( ; *szIt != 0 && *szIt != '\n'; szIt++ )
 	{
-		int next = xpos + gHUD.m_scrinfo.charWidths[ *szIt ]; // variable-width fonts look cool
+		int next = xpos + ChWidth( *szIt );
+
 		if ( next > iMaxX )
 			return xpos;
 
@@ -261,6 +263,7 @@ int CHud :: DrawHudNumberString( int xpos, int ypos, int iMinX, int iNumber, int
 // draws a string from right to left (right-aligned)
 int CHud :: DrawHudStringReverse( int xpos, int ypos, int iMinX, char *szString, int r, int g, int b )
 {
+	//ConsolePrint("DrawHudStringReverse\n");
 	// find the end of the string
 	for ( char *szIt = szString; *szIt != 0; szIt++ )
 	{ // we should count the length?		
@@ -269,7 +272,8 @@ int CHud :: DrawHudStringReverse( int xpos, int ypos, int iMinX, char *szString,
 	// iterate throug the string in reverse
 	for ( szIt--;  szIt != (szString-1);  szIt-- )	
 	{
-		int next = xpos - gHUD.m_scrinfo.charWidths[ *szIt ]; // variable-width fonts look cool
+		int next = xpos + ChWidth( *szIt );
+
 		if ( next < iMinX )
 			return xpos;
 		xpos = next;

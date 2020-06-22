@@ -251,6 +251,8 @@ void DrawRain( void )
 	else 
 		hsprTexture = LoadSprite( "sprites/snowflake.spr" ); // load snow sprite
 
+	if(!hsprTexture) return;
+	
 	// usual triapi stuff
 	pTexture = gEngfuncs.GetSpritePointer( hsprTexture );
 	gEngfuncs.pTriAPI->SpriteTexture( (struct model_s *)pTexture, 0 );
@@ -359,6 +361,7 @@ void DrawFXObjects( void )
 	HSPRITE hsprTexture;
 	const model_s *pTexture;
 	hsprTexture = LoadSprite( "sprites/waterring.spr" ); // load water ring sprite
+	if(!hsprTexture) return;
 	pTexture = gEngfuncs.GetSpritePointer( hsprTexture );
 	gEngfuncs.pTriAPI->SpriteTexture( (struct model_s *)pTexture, 0 );
 	gEngfuncs.pTriAPI->RenderMode( kRenderTransAdd );

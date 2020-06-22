@@ -94,6 +94,7 @@ int CHudFlashlight:: MsgFunc_Flashlight(const char *pszName,  int iSize, void *p
 	return 1;
 }
 
+
 int CHudFlashlight::Draw(float flTime)
 {
 	if ( gHUD.m_iHideHUDDisplay & ( HIDEHUD_FLASHLIGHT | HIDEHUD_ALL ) )
@@ -102,7 +103,7 @@ int CHudFlashlight::Draw(float flTime)
 	int r, g, b, x, y, a;
 	wrect_t rc;
 
-	if (!(gHUD.m_iWeaponBits & (1<<(WEAPON_SUIT)) ))
+	if (!(gHUD.m_iHideHUDDisplay & ITEM_SUIT ))
 		return 1;
 
 	if (m_fOn)
@@ -110,6 +111,27 @@ int CHudFlashlight::Draw(float flTime)
 	else
 		a = MIN_ALPHA;
 
+// scrama: nightvision
+	if ( (m_fOn) && (CVAR_GET_FLOAT("sv_nightvision")) )
+	{
+		HSPRITE hspr = SPR_Load( "sprites/nvg.spr" );
+   
+		SPR_Set(hspr, 128, 255, 128 );
+   
+		int frame = (int)(flTime * 20) % SPR_Frames(hspr);
+		int xSize = SPR_Width(hspr, 0);
+		int ySize = SPR_Height(hspr, 0);
+   
+		for (int yPos = 0; yPos < ScreenHeight; yPos += ySize)
+		{
+			for (int xPos = 0; xPos < ScreenWidth; xPos += xSize)
+			{
+				SPR_DrawAdditive(frame, xPos, yPos, NULL);
+			}
+		}
+	} 	
+	
+//	
 	if (m_flBat < 0.20)
 		UnpackRGB(r,g,b, RGB_REDISH);
 	else
