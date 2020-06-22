@@ -1,0 +1,19 @@
+resolution	1024	768
+
+resource/background/splash_1a.tga		scaled		0	0
+resource/background/splash_1b.tga		scaled		256	0
+resource/background/splash_1c.tga		scaled		512	0
+resource/background/splash_1d.tga		scaled		768	0
+
+resource/background/splash_2a.tga		scaled		0	256
+resource/background/splash_2b.tga		scaled		256	256
+resource/background/splash_2c.tga		scaled		512	256
+resource/background/splash_2d.tga		scaled		768	256
+
+resource/background/splash_3a.tga		scaled		0	512
+resource/background/splash_3b.tga		scaled		256	512
+resource/background/splash_3c.tga		scaled		512	512
+resource/background/splash_3d.tga		scaled		768	512
+
+
+
